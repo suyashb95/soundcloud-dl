@@ -1,11 +1,11 @@
 import soundcloud,json,requests,os,HTMLParser,re,sys
-
+from config import secret
 class Downloader():
 	
 	def __init__(self,url = None,dirname = None):
 		self.url = url
 		self.dirname = dirname
-		self.client = soundcloud.Client(client_id = 'f21537b8df8ad884d6ac791d2f53868e')
+		self.client = soundcloud.Client(client_id = secret)
 		
 	def getUser(self):
 		user = self.client.get('/resolve',url = self.url)
@@ -23,12 +23,12 @@ class Downloader():
 					}
 			#self.getArtWork(track.artwork_url)
 			if(track.downloadable):
-				self.getFile(track.title.encode('utf-8'),track.stream_url + '?client_id=f21537b8df8ad884d6ac791d2f53868e')
+				self.getFile(track.title.encode('utf-8'),track.stream_url + '?client_id='+seret)
 			else:
-				self.getFile(track.title.encode('utf-8'),track.download_url +  + '?client_id=f21537b8df8ad884d6ac791d2f53868e')
+				self.getFile(track.title.encode('utf-8'),track.download_url +  + '?client_id='+secret)
 			
 	def getLikedTracks(self):
-		url = 'https://api.soundcloud.com/users/' + str(self.getUser().id) + '/favorites?client_id=f21537b8df8ad884d6ac791d2f53868e'
+		url = 'https://api.soundcloud.com/users/' + str(self.getUser().id) + '/favorites?client_id='+secret
 		response = requests.get(url)
 		liked_tracks = json.loads(response.text)
 		print str(len(liked_tracks)) + " track(s) found."

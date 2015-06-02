@@ -1,9 +1,3 @@
 *.pyc
-*/*.pyc*.pyc
-*/*.pyc*.pyc
-*/*.pyc*.pyc
-*/*.pyc*.pyc
-*/*.pyc*.pyc
-*/*.pyc*.pyc
-*/*.pyc*.pyc
 */*.pyc
+downloader/config.py
