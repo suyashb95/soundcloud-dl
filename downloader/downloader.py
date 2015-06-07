@@ -4,6 +4,7 @@ from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4,MP4Cover
 from mutagen.flac import FLAC
 from mutagen.id3 import ID3, TIT2, TALB, TPE1, TPE2, COMM, USLT, TCOM, TCON, TDRC,APIC
+from soundcloud import resource
 
 class Downloader():
 	
@@ -46,6 +47,13 @@ class Downloader():
 		for track in liked_tracks:
 			for track in tracks:
 				self.getSingleTrack(track)
+	
+	def getPlaylist(self,playlists):
+		for playlist in playlists:
+			tracks = resource.ResourceList(playlist.tracks)
+			print str(len(track)) + " track(s) found."
+			for track in tracks:
+					self.getSingleTrack(track)
 		
 	def progressBar(self,done,file_size):
 		percentage = ((done/file_size)*100)
@@ -181,16 +189,27 @@ class Downloader():
 		parser = HTMLParser.HTMLParser()
 		data = self.Resolver()
 		if data is not None:
-			if data.kind == 'user':
-				folder = re.sub('[\/:*"?<>|]','_',data.username.encode('utf-8'))
-				if not os.path.isdir(folder):
-					os.mkdir(folder)
-				os.chdir(os.getcwd() + '\\' + str(folder))
-				print "Saving in : " + os.getcwd()
-				self.getUploadedTracks(data)			
-			elif data.kind == 'track':
-				print "Saving in : " + os.getcwd()
-				self.getSingleTrack(data)
+			try:
+				if data.kind == 'user':
+					folder = re.sub('[\/:*"?<>|]','_',data.username.encode('utf-8'))
+					if not os.path.isdir(folder):
+						os.mkdir(folder)
+					os.chdir(os.getcwd() + '\\' + str(folder))
+					print "Saving in : " + os.getcwd()
+					self.getUploadedTracks(data)			
+				elif data.kind == 'track':
+					print "Saving in : " + os.getcwd()
+					self.getSingleTrack(data)
+			except AttributeError:
+				if data[0].kind == 'playlist':
+					folder = re.sub('[\/:*"?<>|]','_',data[0].user['username'].encode('utf-8'))
+					if not os.path.isdir(folder):
+						os.mkdir(folder)
+					os.chdir(os.getcwd() + '\\' + str(folder))
+					print "Saving in : " + os.getcwd()
+					self.getPlaylist(data)
 		else:
 			print "Invalid URL"
+			
+			
 		
