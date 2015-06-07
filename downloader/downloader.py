@@ -1,4 +1,4 @@
-import soundcloud,json,requests,os,HTMLParser,re,sys
+import soundcloud,json,requests,os,re,sys
 from config import secret
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4,MP4Cover
@@ -186,7 +186,6 @@ class Downloader():
 		except WindowsError:
 			print "Invalid Directory"
 			return
-		parser = HTMLParser.HTMLParser()
 		data = self.Resolver()
 		if data is not None:
 			try:
