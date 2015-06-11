@@ -12,6 +12,9 @@ class Downloader():
 		self.url = url
 		self.dirname = dirname
 		self.client = soundcloud.Client(client_id = secret)
+		self.session = requests.Session()
+		self.session.mount("http://", requests.adapters.HTTPAdapter(max_retries=2))
+		self.session.mount("https://", requests.adapters.HTTPAdapter(max_retries=2))
 		
 	def Resolver(self):
 		try:
@@ -64,7 +67,7 @@ class Downloader():
 			
 	def getFile(self,filename,link,silent = False):
 		if silent and link is not None:
-			response = requests.get(str(link), stream=True)
+			response = self.session.get(str(link), stream=True)
 			with open(filename,'wb') as file:
 				for chunk in response.iter_content(chunk_size=1024):
 					if chunk:
@@ -73,7 +76,7 @@ class Downloader():
 			return 
 			
 		print "\nConnecting to stream..."
-		response = requests.get(str(link), stream=True)
+		response = self.session.get(str(link), stream=True)
 		print "Response: "+ str(response.status_code)		
 		file_size = float(response.headers['content-length'])
 		filename = re.sub('[\/:*"?<>|]','_',filename)
@@ -93,8 +96,9 @@ class Downloader():
 					file.flush()
 					done += len(chunk)
 					self.progressBar(done,file_size)
-		return filename
 		print "\nDownload complete."
+		return filename
+
 		
 	def tagFile(self,filename,metadata,art_url):
 		self.getFile('artwork.jpg',art_url,True)
@@ -121,7 +125,7 @@ class Downloader():
 				)
 			audio.tags["TIT2"] = TIT2(encoding=3, text=metadata['title'])
 			audio.tags["TPE1"] = TPE1(encoding=3, text=metadata['artist'])
-			audio.tags["TDRC"] = TDRC(encoding=3, text=metadata['year'])
+			audio.tags["TDRC"] = TDRC(encoding=3, text=unicode(metadata['year']))
 			audio.tags["TCON"] = TCON(encoding=3, text=metadata['genre'])
 			audio.save()
 		elif(filename.endswith('.flac')):
