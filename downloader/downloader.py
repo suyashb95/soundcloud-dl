@@ -38,8 +38,12 @@ class Downloader():
 		new_filename = self.getFile(filename,url)
 		self.tagFile(new_filename,metadata,track.artwork_url)
 				
-	def getUploadedTracks(self,user):
-		tracks = self.client.get('/tracks',user_id = user.id)
+	def getUploadedTracks(self,data):
+		if isinstance(data,resource.Resource):
+			user = data
+			tracks = self.client.get('/tracks',user_id = user.id)
+		else:
+			tracks = data
 		print str(len(tracks)) + " track(s) found."
 		for track in tracks:
 			self.getSingleTrack(track)
@@ -54,7 +58,7 @@ class Downloader():
 	def getPlaylist(self,playlists):
 		for playlist in playlists:
 			tracks = resource.ResourceList(playlist.tracks)
-			print str(len(track)) + " track(s) found."
+			print str(len(tracks)) + " track(s) found."
 			for track in tracks:
 					self.getSingleTrack(track)
 		
@@ -192,7 +196,7 @@ class Downloader():
 			return
 		data = self.Resolver()
 		if data is not None:
-			try:
+			if isinstance(data,resource.Resource):
 				if data.kind == 'user':
 					folder = re.sub('[\/:*"?<>|]','_',data.username.encode('utf-8'))
 					if not os.path.isdir(folder):
@@ -203,7 +207,7 @@ class Downloader():
 				elif data.kind == 'track':
 					print "Saving in : " + os.getcwd()
 					self.getSingleTrack(data)
-			except AttributeError:
+			elif isinstance(data,resource.ResourceList):
 				if data[0].kind == 'playlist':
 					folder = re.sub('[\/:*"?<>|]','_',data[0].user['username'].encode('utf-8'))
 					if not os.path.isdir(folder):
@@ -211,6 +215,8 @@ class Downloader():
 					os.chdir(os.getcwd() + '\\' + str(folder))
 					print "Saving in : " + os.getcwd()
 					self.getPlaylist(data)
+				elif data[0].kind == 'track':
+					self.getUploadedTracks(data)
 		else:
 			print "Invalid URL"
 			
