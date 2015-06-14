@@ -208,12 +208,12 @@ class Downloader():
 					print "Saving in : " + os.getcwd()
 					self.getSingleTrack(data)
 			elif isinstance(data,resource.ResourceList):
-				if data[0].kind == 'playlist':
-					folder = re.sub('[\/:*"?<>|]','_',data[0].user['username'].encode('utf-8'))
-					if not os.path.isdir(folder):
+				folder = re.sub('[\/:*"?<>|]','_',data[0].user['username'].encode('utf-8'))
+				if not os.path.isdir(folder):
 						os.mkdir(folder)
-					os.chdir(os.getcwd() + '\\' + str(folder))
-					print "Saving in : " + os.getcwd()
+				os.chdir(os.getcwd() + '\\' + str(folder))
+				print "Saving in : " + os.getcwd()
+				if data[0].kind == 'playlist':		
 					self.getPlaylist(data)
 				elif data[0].kind == 'track':
 					self.getUploadedTracks(data)
