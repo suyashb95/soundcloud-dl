@@ -11,10 +11,17 @@ A small command-line program to download tracks from soundcloud.com
 * `pip -install -r "requirements.txt"`
 
 ##Usage
-* On the terminal or Command Prompt Type
-  `python soundcloud-dl.py "url" "directory"`
+* usage: soundcloud-dl.py [-h] [--url URL] [--dir DIR] [--all] [--likes]
 * The url can be a link to a user, a track or a user's playlists
-* Example : `python soundcloud-dl.py "https://soundcloud.com/stringofasymptotes" "D:\Music"`
+* Example : `python soundcloud-dl.py --url "https://soundcloud.com/stringofasymptotes" --dir "D:\Music"`
+
+##Options
+     -h, --help  show this help message and exit
+     --url URL   URL to download tracks from.
+     --dir DIR   Directory to save tracks in. Default value is the current
+                 working directory.
+     --all       Download all tracks.(Uploads and likes)
+     --likes     Download only liked tracks.
   
 ###Dependencies
 * soundcloud - To work with the soundcloud API

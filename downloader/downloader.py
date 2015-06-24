@@ -8,59 +8,59 @@ from soundcloud import resource
 
 class Downloader():
 	
-	def __init__(self,url = None,dirname = None):
-		self.url = url
-		self.dirname = dirname
+	def __init__(self,args = None):
+		self.args = args
+		self.url = args.url
+		self.dirname = args.dir
 		self.client = soundcloud.Client(client_id = secret)
 		self.session = requests.Session()
 		self.session.mount("http://", requests.adapters.HTTPAdapter(max_retries=2))
 		self.session.mount("https://", requests.adapters.HTTPAdapter(max_retries=2))
 		
-	def Resolver(self):
+	def Resolver(self,url):
 		try:
-			data = self.client.get('/resolve',url = self.url)
+			data = self.client.get('/resolve',url = url)
 		except:
 			return None
 		return data
 		
 	def getSingleTrack(self,track):
+		if not isinstance(track,resource.Resource):
+			track = resource.Resource(track)
 		metadata = {'title':track.title.encode('utf-8'),
 					'artist':track.user['username'].encode('utf-8'),
 					'year':track.release_year,
 					'genre':track.genre.encode('utf-8'),
 				}
 		if(track.downloadable):
-			filename = track.title.encode('utf-8')+'.'+track.original_format
+			filename = (track.user['username'] + ' - ' + track.title + '.' + track.original_format).encode('utf-8')
 			url = track.download_url + '?client_id='+secret
 		else:
-			filename = metadata['title']  + '.mp3'
+			filename = (track.user['username'] + ' - ' + track.title + '.mp3' ).encode('utf-8')
 			url = track.stream_url + '?client_id=' + secret
 		new_filename = self.getFile(filename,url)
 		self.tagFile(new_filename,metadata,track.artwork_url)
 				
-	def getUploadedTracks(self,data):
-		if isinstance(data,resource.Resource):
-			user = data
-			tracks = self.client.get('/tracks',user_id = user.id)
+	def getPlaylists(self,playlists):
+		if isinstance(playlists,resource.ResourceList):
+			for playlist in playlists:
+				for track in playlist.tracks:
+					self.getSingleTrack(track)
 		else:
-			tracks = data
-		print str(len(tracks)) + " track(s) found."
+			print "%d tracks found in this playlist" % (len(playlist.tracks))
+			for track in playlists:
+				self.getSingleTrack(track)
+			
+	def getUploadedTracks(self,user):
+		tracks = self.client.get('/tracks',user_id = user.id)
 		for track in tracks:
 			self.getSingleTrack(track)
 			
 	def getLikedTracks(self,user):
-		liked_tracks = client.get('/resolve',url = self.url + '/likes')
-		print str(len(liked_tracks)) + " track(s) found."
+		liked_tracks = self.Resolver(self.url + '/likes')
+		print str(len(liked_tracks)) + " liked track(s) found."
 		for track in liked_tracks:
-			for track in tracks:
-				self.getSingleTrack(track)
-	
-	def getPlaylist(self,playlists):
-		for playlist in playlists:
-			tracks = resource.ResourceList(playlist.tracks)
-			print str(len(tracks)) + " track(s) found."
-			for track in tracks:
-					self.getSingleTrack(track)
+			self.getSingleTrack(track)
 		
 	def progressBar(self,done,file_size):
 		percentage = ((done/file_size)*100)
@@ -70,54 +70,57 @@ class Downloader():
 		sys.stdout.write(' | %.2f' % percentage + ' %')
 			
 	def getFile(self,filename,link,silent = False):
-		if silent and link is not None:
+		if link is not None:
+			if silent:
+				response = self.session.get(str(link), stream=True)
+				with open(filename,'wb') as file:
+					for chunk in response.iter_content(chunk_size=1024):
+						if chunk:
+							file.write(chunk)
+							file.flush()
+				return					
+			print "\nConnecting to stream..."
 			response = self.session.get(str(link), stream=True)
+			print "Response: "+ str(response.status_code)		
+			file_size = float(response.headers['content-length'])
+			filename = re.sub('[\/:*"?<>|]','_',filename)
+			if(os.path.isfile(filename)):
+				if os.path.getsize(filename) >= long(file_size):
+					print filename + " already exists, skipping."
+					return filename
+				else:
+					print "Incomplete download, restarting."
+			print "File Size: " + '%.2f' % (file_size/(1000**2)) + ' MB'
+			print "Saving as: " + filename
+			done = 0
 			with open(filename,'wb') as file:
 				for chunk in response.iter_content(chunk_size=1024):
 					if chunk:
 						file.write(chunk)
 						file.flush()
+						done += len(chunk)
+						self.progressBar(done,file_size)
+			print "\nDownload complete."
+			return filename
+		else:
 			return 
-			
-		print "\nConnecting to stream..."
-		response = self.session.get(str(link), stream=True)
-		print "Response: "+ str(response.status_code)		
-		file_size = float(response.headers['content-length'])
-		filename = re.sub('[\/:*"?<>|]','_',filename)
-		if(os.path.isfile(filename)):
-			if os.path.getsize(filename) >= long(file_size):
-				print filename + " already exists, skipping."
-				return filename
-			else:
-				print "Incomplete download, restarting."
-		print "File Size: " + '%.2f' % (file_size/(1000**2)) + ' MB'
-		print "Saving as: " + filename
-		done = 0
-		with open(filename,'wb') as file:
-			for chunk in response.iter_content(chunk_size=1024):
-				if chunk:
-					file.write(chunk)
-					file.flush()
-					done += len(chunk)
-					self.progressBar(done,file_size)
-		print "\nDownload complete."
-		return filename
 
 		
 	def tagFile(self,filename,metadata,art_url):
-		self.getFile('artwork.jpg',art_url,True)
+		image = None
+		if art_url is not None:
+			self.getFile('artwork.jpg',art_url,True)
+			try:
+				with open('artwork.jpg','rb') as file:
+					image = file.read()
+			except:
+				pass
 		if(filename.endswith('.mp3')):
 			audio = MP3(filename,ID3=ID3)
 			try:
 				audio.add_tags()
 			except:
 				pass 
-			image = None
-			try:
-				with open('artwork.jpg','rb') as file:
-					image = file.read()
-			except:
-				pass
 			audio.tags.add(
 				APIC(
 					encoding=3,
@@ -142,12 +145,6 @@ class Downloader():
 			audio.tags['artist'] = metadata['artist']
 			audio.tags['year'] = metadata['year']
 			audio.tags['genre'] = metadata['genre']
-			image = None
-			try:
-				with open('artwork.jpg','rb') as file:
-					image = file.read()
-			except:
-				pass
 			audio.tags.add(
 				APIC(
 					encoding=3,
@@ -164,12 +161,6 @@ class Downloader():
 				audio.add_tags()
 			except:
 				pass
-			image = None
-			try:
-				with open('artwork.jpg','rb') as file:
-					image = file.read()
-			except:
-				pass 
 			covr = []
 			covr.append(MP4Cover(image, MP4Cover.FORMAT_JPEG))
 			audio.tags['covr'] = covr
@@ -177,8 +168,9 @@ class Downloader():
 			audio.tags['artist'] = metadata['artist']
 			#audio.tags['year'] = metadata['year']
 			audio.tags['genre'] = metadata['genre']
-			audio.save()	
-		os.remove('artwork.jpg')
+			audio.save()
+		if os.path.isfile('artwork.jpg'):	
+			os.remove('artwork.jpg')
 		
 	def Download(self):
 		if self.url is None:
@@ -188,35 +180,60 @@ class Downloader():
 			print "Invalid URL"
 			return
 		try:
-			if self.dirname is not None:
+			if os.path.isdir(self.dirname):
 				os.chdir(str(self.dirname))
+			else:
+				print "Directory doesn't exist."
+				return
 			print "Connecting ... "		
 		except WindowsError:
 			print "Invalid Directory"
 			return
-		data = self.Resolver()
+		data = self.Resolver(self.url)
 		if data is not None:
 			if isinstance(data,resource.Resource):
 				if data.kind == 'user':
+					print "User profile found."
 					folder = re.sub('[\/:*"?<>|]','_',data.username.encode('utf-8'))
 					if not os.path.isdir(folder):
 						os.mkdir(folder)
 					os.chdir(os.getcwd() + '\\' + str(folder))
 					print "Saving in : " + os.getcwd()
-					self.getUploadedTracks(data)			
+					if self.args.all:
+						self.getUploadedTracks(data)
+						self.getLikedTracks(data)
+					elif self.args.likes:
+						self.getLikedTracks(data)
+					else:
+						self.getUploadedTracks(data)			
 				elif data.kind == 'track':
+					print "Single track found."
 					print "Saving in : " + os.getcwd()
 					self.getSingleTrack(data)
-			elif isinstance(data,resource.ResourceList):
-				folder = re.sub('[\/:*"?<>|]','_',data[0].user['username'].encode('utf-8'))
-				if not os.path.isdir(folder):
+				elif data.kind == 'playlist':
+					print "Single playlist found."
+					folder = re.sub('[\/:*"?<>|]','_',data.user['username'].encode('utf-8'))
+					if not os.path.isdir(folder):
 						os.mkdir(folder)
+					os.chdir(os.getcwd() + '\\' + str(folder))
+					self.getPlaylists(data)					
+			elif isinstance(data,resource.ResourceList):
+				if self.url.endswith('likes'):
+					user_url = self.url[:6]
+					user = self.Resolve(user_url)
+					folder = re.sub('[\/:*"?<>|]','_',user.username.encode('utf-8'))
+				else:
+					folder = re.sub('[\/:*"?<>|]','_',data[0].user['username'].encode('utf-8'))
+				if not os.path.isdir(folder):
+					os.mkdir(folder)
 				os.chdir(os.getcwd() + '\\' + str(folder))
 				print "Saving in : " + os.getcwd()
-				if data[0].kind == 'playlist':		
-					self.getPlaylist(data)
+				if data[0].kind == 'playlist':
+					print "%d playlists found." % (len(data))		
+					self.getPlaylists(data)
 				elif data[0].kind == 'track':
-					self.getUploadedTracks(data)
+					for track in data:
+						self.getSingleTrack(track)
 		else:
 			print "Invalid URL"
 			
