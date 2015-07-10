@@ -5,6 +5,8 @@ from mutagen.mp4 import MP4,MP4Cover
 from mutagen.flac import FLAC
 from mutagen.id3 import ID3, TIT2, TALB, TPE1, TPE2, COMM, USLT, TCOM, TCON, TDRC,APIC
 from soundcloud import resource
+from time import sleep
+from contextlib import closing
 
 class Downloader():
 	
@@ -23,7 +25,26 @@ class Downloader():
 		except:
 			return None
 		return data
-		
+	
+	def connectionHandler(self,url,stream = False,timeout = 15):
+		try:
+			response = self.session.get(url,stream = stream,timeout = timeout)
+			assert response.status_code == 200
+			return response
+		except requests.exceptions.ConnectionError as error:
+			print error[0].reason.args[1]
+			if error[0].reason.args[1].errno == 11004:
+				print "Connection Error."
+			print "Retrying in 15 seconds."
+			sleep(15)
+			self.connectionHandler(url,stream)
+		except AssertionError:
+			print "Connection error or invalid URL."
+			sys.exit(0) 
+		except KeyboardInterrupt:
+			print "Exiting"
+			sys.exit(0)
+				
 	def getSingleTrack(self,track):
 		if not isinstance(track,resource.Resource):
 			track = resource.Resource(track)
@@ -72,36 +93,47 @@ class Downloader():
 	def getFile(self,filename,link,silent = False):
 		if link is not None:
 			if silent:
-				response = self.session.get(str(link), stream=True)
-				with open(filename,'wb') as file:
-					for chunk in response.iter_content(chunk_size=1024):
-						if chunk:
-							file.write(chunk)
-							file.flush()
-				return					
-			print "\nConnecting to stream..."
-			response = self.session.get(str(link), stream=True)
-			print "Response: "+ str(response.status_code)		
-			file_size = float(response.headers['content-length'])
-			filename = re.sub('[\/:*"?<>|]','_',filename)
-			if(os.path.isfile(filename)):
-				if os.path.getsize(filename) >= long(file_size):
-					print filename + " already exists, skipping."
+				try:
+					with closing(self.connectionHandler(link,True,5)) as response:
+						with open(filename,'wb') as file:
+							for chunk in response.iter_content(chunk_size=1024):
+								if chunk:
+									file.write(chunk)
+									file.flush()
 					return filename
-				else:
-					print "Incomplete download, restarting."
-			print "File Size: " + '%.2f' % (file_size/(1000**2)) + ' MB'
-			print "Saving as: " + filename
-			done = 0
-			with open(filename,'wb') as file:
-				for chunk in response.iter_content(chunk_size=1024):
-					if chunk:
-						file.write(chunk)
-						file.flush()
-						done += len(chunk)
-						self.progressBar(done,file_size)
-			print "\nDownload complete."
-			return filename
+				except:
+					self.getFile(filename,link,True)			
+			print "\nConnecting to stream..."
+			try:
+				with closing(self.connectionHandler(link,True,5)) as response:
+					print "Response: "+ str(response.status_code)		
+					file_size = float(response.headers['content-length'])	
+					if(os.path.isfile(filename)):
+						if os.path.getsize(filename) >= long(file_size):
+							print filename + " already exists, skipping."
+							return filename
+						else:
+							print "Incomplete download, restarting."
+					print "File Size: " + '%.2f' % (file_size/(1000**2)) + ' MB'
+					print "Saving as: " + filename
+					done = 0
+					with open(filename,'wb') as file:
+						for chunk in response.iter_content(chunk_size=1024):
+							if chunk:
+								file.write(chunk)
+								file.flush()
+								done += len(chunk)
+								self.progressBar(done,file_size)
+					print "\nDownload complete."
+					return filename
+			except KeyboardInterrupt:
+				print "Exiting."
+				sys.exit(0)
+			except:
+				print "\nNetwork Error.Retrying in 15 seconds."
+				sleep(15)
+				self.getFile(filename,link)
+				print link 
 		else:
 			return 
 
