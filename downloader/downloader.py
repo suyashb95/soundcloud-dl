@@ -19,30 +19,50 @@ class Downloader():
 		self.session.mount("http://", requests.adapters.HTTPAdapter(max_retries=2))
 		self.session.mount("https://", requests.adapters.HTTPAdapter(max_retries=2))
 		
-	def Resolver(self,url):
+	def Resolver(self,action,data,resolve = False):
 		try:
-			data = self.client.get('/resolve',url = url)
-		except:
-			return None
-		return data
+			if resolve:
+				data = self.client.get(str(action),url = str(data))
+			else:
+				data = self.client.get(str(action),user_id = data)
+		except requests.exceptions.ConnectionError:
+			print "Connection error. Retrying in 15 seconds."
+			sleep(15)
+			return self.Resolver(action,data,resolve)
+		except TypeError:
+			print "Type error. Retrying in 15 seconds."
+			sleep(15)
+			return self.Resolver(action,data,resolve)
+		except requests.exceptions.HTTPError:
+			print "Invalid URL."
+			return
+		except KeyboardInterrupt:
+			print "\nExiting."
+			sys.exit(0)
+		if data is not None:
+			return data
 	
 	def connectionHandler(self,url,stream = False,timeout = 15):
 		try:
 			response = self.session.get(url,stream = stream,timeout = timeout)
 			assert response.status_code == 200
 			return response
-		except requests.exceptions.ConnectionError as error:
-			print error[0].reason.args[1]
-			if error[0].reason.args[1].errno == 11004:
-				print "Connection Error."
-			print "Retrying in 15 seconds."
+		except requests.exceptions.ConnectionError:
+			print "Network error.Retrying in 15 seconds."
 			sleep(15)
-			self.connectionHandler(url,stream)
+			return self.connectionHandler(url,stream)
+		except TypeError:
+			print "Network error.Retrying in 15 seconds."
+			sleep(15)
+			return self.connectionHandler(url,stream)
 		except AssertionError:
 			print "Connection error or invalid URL."
 			sys.exit(0) 
+		except requests.exceptions.HTTPError:
+			print "Invalid URL."
+			return
 		except KeyboardInterrupt:
-			print "Exiting"
+			print "\nExiting."
 			sys.exit(0)
 				
 	def getSingleTrack(self,track):
@@ -60,6 +80,7 @@ class Downloader():
 			filename = (track.user['username'] + ' - ' + track.title + '.mp3' ).encode('utf-8')
 			url = track.stream_url + '?client_id=' + secret
 		new_filename = self.getFile(filename,url)
+		return new_filename
 		self.tagFile(new_filename,metadata,track.artwork_url)
 				
 	def getPlaylists(self,playlists):
@@ -73,12 +94,13 @@ class Downloader():
 				self.getSingleTrack(track)
 			
 	def getUploadedTracks(self,user):
-		tracks = self.client.get('/tracks',user_id = user.id)
+		tracks = self.Resolver('/tracks',user.id)
+			#tracks = self.client.get('/tracks',user_id = user.id)
 		for track in tracks:
 			self.getSingleTrack(track)
 			
 	def getLikedTracks(self,user):
-		liked_tracks = self.Resolver(self.url + '/likes')
+		liked_tracks = self.Resolver('/resolve',self.url + '/likes',True)
 		print str(len(liked_tracks)) + " liked track(s) found."
 		for track in liked_tracks:
 			self.getSingleTrack(track)
@@ -117,23 +139,27 @@ class Downloader():
 					print "File Size: " + '%.2f' % (file_size/(1000**2)) + ' MB'
 					print "Saving as: " + filename
 					done = 0
-					with open(filename,'wb') as file:
-						for chunk in response.iter_content(chunk_size=1024):
-							if chunk:
-								file.write(chunk)
-								file.flush()
-								done += len(chunk)
-								self.progressBar(done,file_size)
-					print "\nDownload complete."
-					return filename
+					try:
+						with open(filename,'wb') as file:
+							for chunk in response.iter_content(chunk_size=1024):
+								if chunk:
+									file.write(chunk)
+									file.flush()
+									done += len(chunk)
+									self.progressBar(done,file_size)
+									
+						if os.path.getsize(filename) < long(file_size):
+							print "\nConnection error. Restarting in 15 seconds."
+							sleep(15)
+							return self.getFile(filename,link,silent)
+						print "\nDownload complete."
+						return filename
+					except KeyboardInterrupt:
+						print "\nExiting."
+						sys.exit(0)
 			except KeyboardInterrupt:
-				print "Exiting."
+				print "\nExiting." 
 				sys.exit(0)
-			except:
-				print "\nNetwork Error.Retrying in 15 seconds."
-				sleep(15)
-				self.getFile(filename,link)
-				print link 
 		else:
 			return 
 
@@ -221,7 +247,7 @@ class Downloader():
 		except WindowsError:
 			print "Invalid Directory"
 			return
-		data = self.Resolver(self.url)
+		data = self.Resolver('/resolve',self.url,True)
 		if data is not None:
 			if isinstance(data,resource.Resource):
 				if data.kind == 'user':
@@ -251,8 +277,8 @@ class Downloader():
 					self.getPlaylists(data)					
 			elif isinstance(data,resource.ResourceList):
 				if self.url.endswith('likes'):
-					user_url = self.url[:6]
-					user = self.Resolve(user_url)
+					user_url = self.url[:-6]
+					user = self.Resolver('/resolve',user_url,True)
 					folder = re.sub('[\/:*"?<>|]','_',user.username.encode('utf-8'))
 				else:
 					folder = re.sub('[\/:*"?<>|]','_',data[0].user['username'].encode('utf-8'))
@@ -267,7 +293,7 @@ class Downloader():
 					for track in data:
 						self.getSingleTrack(track)
 		else:
-			print "Invalid URL"
+			print "Network error or Invalid URL"
 			
 			
 		
