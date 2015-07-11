@@ -48,11 +48,11 @@ class Downloader():
 			assert response.status_code == 200
 			return response
 		except requests.exceptions.ConnectionError:
-			print "Network error.Retrying in 15 seconds."
+			print "Connection error. Retrying in 15 seconds."
 			sleep(15)
 			return self.connectionHandler(url,stream)
 		except TypeError:
-			print "Network error.Retrying in 15 seconds."
+			print "Type error.Retrying in 15 seconds."
 			sleep(15)
 			return self.connectionHandler(url,stream)
 		except AssertionError:
@@ -95,7 +95,6 @@ class Downloader():
 			
 	def getUploadedTracks(self,user):
 		tracks = self.Resolver('/tracks',user.id)
-			#tracks = self.client.get('/tracks',user_id = user.id)
 		for track in tracks:
 			self.getSingleTrack(track)
 			
@@ -293,7 +292,8 @@ class Downloader():
 					for track in data:
 						self.getSingleTrack(track)
 		else:
-			print "Network error or Invalid URL"
+			print "Network error or Invalid URL."
+			sys.exit(0)
 			
 			
 		
