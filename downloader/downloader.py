@@ -7,6 +7,7 @@ from mutagen.id3 import ID3, TIT2, TALB, TPE1, TPE2, COMM, USLT, TCOM, TCON, TDR
 from soundcloud import resource
 from time import sleep
 from contextlib import closing
+import socket
 
 class Downloader():
 	
@@ -36,6 +37,10 @@ class Downloader():
 		except requests.exceptions.HTTPError:
 			print "Invalid URL."
 			return
+		except socket.error:
+			print "Connection error. Retrying in 15 seconds."
+			sleep(15)
+			return self.Resolver(action,data,resolve)
 		except KeyboardInterrupt:
 			print "\nExiting."
 			sys.exit(0)
@@ -61,6 +66,10 @@ class Downloader():
 		except requests.exceptions.HTTPError:
 			print "Invalid URL."
 			return
+		except socket.error:
+			print "Connection error. Retrying in 15 seconds."
+			sleep(15)
+			return self.connectionHandler(url,stream)
 		except KeyboardInterrupt:
 			print "\nExiting."
 			sys.exit(0)
@@ -156,6 +165,10 @@ class Downloader():
 					except KeyboardInterrupt:
 						print "\nExiting."
 						sys.exit(0)
+					except socket.error:
+						return self.getFile(filename,link,silent)
+					except requests.exceptions.ConnectionError:
+						return self.getFile(filename,link,silent)
 			except KeyboardInterrupt:
 				print "\nExiting." 
 				sys.exit(0)
