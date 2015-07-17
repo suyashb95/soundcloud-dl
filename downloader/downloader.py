@@ -1,5 +1,5 @@
 import soundcloud,json,requests,os,re,sys
-from config import secret
+from config import secret,browser_id
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4,MP4Cover
 from mutagen.flac import FLAC
@@ -87,7 +87,7 @@ class Downloader():
 			url = track.download_url + '?client_id='+secret
 		else:
 			filename = (track.user['username'] + ' - ' + track.title + '.mp3' ).encode('utf-8')
-			url = track.stream_url + '?client_id=' + secret
+			url = track.stream_url + '?client_id='+secret
 		new_filename = self.getFile(filename,url)
 		return new_filename
 		self.tagFile(new_filename,metadata,track.artwork_url)
@@ -121,16 +121,17 @@ class Downloader():
 		sys.stdout.write(' | %.2f' % percentage + ' %')
 			
 	def getFile(self,filename,link,silent = False):
+		new_filename = re.sub('[\/:*"?<>|]','_',filename)
 		if link is not None:
 			if silent:
 				try:
 					with closing(self.connectionHandler(link,True,5)) as response:
-						with open(filename,'wb') as file:
+						with open(new_filename,'wb') as file:
 							for chunk in response.iter_content(chunk_size=1024):
 								if chunk:
 									file.write(chunk)
 									file.flush()
-					return filename
+					return new_filename
 				except:
 					self.getFile(filename,link,True)			
 			print "\nConnecting to stream..."
@@ -138,17 +139,17 @@ class Downloader():
 				with closing(self.connectionHandler(link,True,5)) as response:
 					print "Response: "+ str(response.status_code)		
 					file_size = float(response.headers['content-length'])	
-					if(os.path.isfile(filename)):
-						if os.path.getsize(filename) >= long(file_size):
-							print filename + " already exists, skipping."
-							return filename
+					if(os.path.isfile(new_filename)):
+						if os.path.getsize(new_filename) >= long(file_size):
+							print new_filename + " already exists, skipping."
+							return new_filename
 						else:
 							print "Incomplete download, restarting."
 					print "File Size: " + '%.2f' % (file_size/(1000**2)) + ' MB'
-					print "Saving as: " + filename
+					print "Saving as: " + new_filename
 					done = 0
 					try:
-						with open(filename,'wb') as file:
+						with open(new_filename,'wb') as file:
 							for chunk in response.iter_content(chunk_size=1024):
 								if chunk:
 									file.write(chunk)
@@ -156,12 +157,12 @@ class Downloader():
 									done += len(chunk)
 									self.progressBar(done,file_size)
 									
-						if os.path.getsize(filename) < long(file_size):
+						if os.path.getsize(new_filename) < long(file_size):
 							print "\nConnection error. Restarting in 15 seconds."
 							sleep(15)
 							return self.getFile(filename,link,silent)
 						print "\nDownload complete."
-						return filename
+						return new_filename
 					except KeyboardInterrupt:
 						print "\nExiting."
 						sys.exit(0)
