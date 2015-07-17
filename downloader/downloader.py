@@ -82,12 +82,16 @@ class Downloader():
 					'year':track.release_year,
 					'genre':track.genre.encode('utf-8'),
 				}
-		if(track.downloadable):
-			filename = (track.user['username'] + ' - ' + track.title + '.' + track.original_format).encode('utf-8')
-			url = track.download_url + '?client_id='+secret
-		else:
+		try:
+			if(track.downloadable):
+				filename = (track.user['username'] + ' - ' + track.title + '.' + track.original_format).encode('utf-8')
+				url = track.download_url + '?client_id='+secret
+			else:
+				filename = (track.user['username'] + ' - ' + track.title + '.mp3' ).encode('utf-8')
+				url = track.stream_url + '?client_id='+secret
+		except AttributeError:
 			filename = (track.user['username'] + ' - ' + track.title + '.mp3' ).encode('utf-8')
-			url = track.stream_url + '?client_id='+secret
+			url = 'https://api.soundcloud.com/tracks/' + str(track.id) + '/stream?client_id=' + browser_id
 		new_filename = self.getFile(filename,url)
 		return new_filename
 		self.tagFile(new_filename,metadata,track.artwork_url)
