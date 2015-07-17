@@ -136,8 +136,13 @@ class Downloader():
 									file.write(chunk)
 									file.flush()
 					return new_filename
-				except:
-					self.getFile(filename,link,True)			
+				except KeyboardInterrupt:
+					print "\nExiting."
+					sys.exit(0)
+				except socket.error:
+					return self.getFile(filename,link,silent)
+				except requests.exceptions.ConnectionError:
+					return self.getFile(filename,link,silent)			
 			print "\nConnecting to stream..."
 			try:
 				with closing(self.connectionHandler(link,True,5)) as response:
