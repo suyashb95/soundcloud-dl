@@ -13,4 +13,8 @@ if __name__ == '__main__':
 		print "No URL entered."
 		sys.exit(0)
 	downloader = downloader.Downloader(args)
-	downloader.Download()
+	try:
+		downloader.Download()
+	except KeyboardInterrupt:
+		print "\nExiting."
+		sys.exit(0)
