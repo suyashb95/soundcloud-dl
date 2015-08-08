@@ -89,13 +89,19 @@ class Downloader():
 			
 	def getUploadedTracks(self,user):
 		tracks = self.Resolver('/tracks',user.id)
-		for track in tracks:
+		for index,track in enumerate(tracks):
+			if (index + 1) in self.args.exclude:
+				print "Skipping " + str(track.title.encode('utf-8'))
+				continue
 			self.getSingleTrack(track)
 			
 	def getLikedTracks(self,user):
 		liked_tracks = self.Resolver('/resolve',self.url + '/likes',True)
 		print str(len(liked_tracks)) + " liked track(s) found."
-		for track in liked_tracks:
+		for index,track in enumerate(liked_tracks):
+			if self.args.likes and index + 1 in self.args.exclude:
+				print "Skipping " + str(track.title.encode('utf-8'))
+				continue
 			self.getSingleTrack(track)
 		
 	def progressBar(self,done,file_size):
@@ -154,7 +160,6 @@ class Downloader():
 		else:
 			return 
 
-		
 	def tagFile(self,filename,metadata,art_url):
 		image = None
 		if art_url is not None:
@@ -281,7 +286,10 @@ class Downloader():
 					print "%d playlists found." % (len(data))		
 					self.getPlaylists(data)
 				elif data[0].kind == 'track':
-					for track in data:
+					for index,track in enumerate(data):
+						if (index + 1) in self.args.exclude:
+							print "Skipping " + str(track.title.encode('utf-8'))
+							continue
 						self.getSingleTrack(track)
 		else:
 			print "Network error or Invalid URL."
