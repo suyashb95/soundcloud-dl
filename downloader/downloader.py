@@ -156,8 +156,8 @@ class Downloader():
 								file.flush()
 								done += len(chunk)
 								self.progressBar(done,file_size)
-								
 					if os.path.getsize(new_filename) < long(file_size):
+						os.remove(new_filename)			
 						print "\nConnection error. Restarting in 15 seconds."
 						sleep(15)
 						return self.getFile(filename,link,silent)
@@ -165,7 +165,12 @@ class Downloader():
 					return new_filename
 				except (socket.error,
 						requests.exceptions.ConnectionError):
+					os.remove(new_filename)					
 					return self.getFile(filename,link,silent)
+				except KeyboardInterrupt:
+					print "\nExiting."
+					os.remove(new_filename)
+					sys.exit(0)
 		else:
 			return 
 
