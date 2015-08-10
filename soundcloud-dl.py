@@ -9,7 +9,7 @@ parser.add_argument('--likes',default = False,action = 'store_true', help = 'Dow
 parser.add_argument('--exclude',nargs = '+',type = int)
 
 if __name__ == '__main__':
-	print args
+	args = parser.parse_args()
 	if args.url == None:
 		print "No URL entered."
 		sys.exit(0)
