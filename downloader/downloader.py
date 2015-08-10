@@ -54,6 +54,10 @@ class Downloader():
 				requests.exceptions.HTTPError):
 			print "Connection error or invalid URL."
 			return
+		except KeyboardInterrupt:
+			print "\nExiting."
+			raise KeyboardInterrupt
+			sys.exit(0)
 			
 	def getSingleTrack(self,track):
 		if not isinstance(track,resource.Resource):
@@ -74,16 +78,16 @@ class Downloader():
 			filename = (track.user['username'] + ' - ' + track.title + '.mp3' ).encode('utf-8')
 			url = 'https://api.soundcloud.com/tracks/' + str(track.id) + '/stream?client_id=' + browser_id
 		try:
+			new_filename = None
 			new_filename = self.getFile(filename,url)
 			return new_filename
 			self.tagFile(new_filename,metadata,track.artwork_url)
 		except KeyboardInterrupt:
-			print "\nExiting."
 			sys.exit(0)
 		except:
-			print "Cannot download " + track.title
+			print "Cannot download " + track.title.encode('utf-8')
 			pass
-				
+			
 	def getPlaylists(self,playlists):
 		if isinstance(playlists,resource.ResourceList):
 			for playlist in playlists:
@@ -144,6 +148,7 @@ class Downloader():
 						print new_filename + " already exists, skipping."
 						return new_filename
 					else:
+						os.remove(new_filename)
 						print "Incomplete download, restarting."
 				print "File Size: " + '%.2f' % (file_size/(1000**2)) + ' MB'
 				print "Saving as: " + new_filename
@@ -170,9 +175,10 @@ class Downloader():
 				except KeyboardInterrupt:
 					print "\nExiting."
 					os.remove(new_filename)
+					raise KeyboardInterrupt
 					sys.exit(0)
 		else:
-			return 
+			return None
 
 	def tagFile(self,filename,metadata,art_url):
 		image = None
