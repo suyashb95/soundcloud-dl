@@ -36,6 +36,9 @@ class Downloader():
 		except requests.exceptions.HTTPError:
 			print "Invalid URL."
 			return
+		except KeyboardInterrupt:
+			print "Exiting."
+			sys.exit(0)
 		if data is not None:
 			return data
 	
@@ -55,8 +58,8 @@ class Downloader():
 			print "Connection error or invalid URL."
 			return
 		except KeyboardInterrupt:
-			print "\nExiting."
-			raise KeyboardInterrupt
+			print "Exiting."
+			raise
 			sys.exit(0)
 			
 	def getSingleTrack(self,track):
@@ -78,7 +81,6 @@ class Downloader():
 			filename = (track.user['username'] + ' - ' + track.title + '.mp3' ).encode('utf-8')
 			url = 'https://api.soundcloud.com/tracks/' + str(track.id) + '/stream?client_id=' + browser_id
 		try:
-			new_filename = None
 			new_filename = self.getFile(filename,url)
 			return new_filename
 			self.tagFile(new_filename,metadata,track.artwork_url)
@@ -139,6 +141,9 @@ class Downloader():
 				except (socket.error,
 						requests.exceptions.ConnectionError):
 					return self.getFile(filename,link,silent)
+				except KeyboardInterrupt:
+					print "\nExiting."
+					sys.exit(0)
 			print "\nConnecting to stream..."
 			with closing(self.connectionHandler(link,True,5)) as response:
 				print "Response: "+ str(response.status_code)		
