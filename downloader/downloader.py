@@ -73,9 +73,16 @@ class Downloader():
 		except AttributeError:
 			filename = (track.user['username'] + ' - ' + track.title + '.mp3' ).encode('utf-8')
 			url = 'https://api.soundcloud.com/tracks/' + str(track.id) + '/stream?client_id=' + browser_id
-		new_filename = self.getFile(filename,url)
-		return new_filename
-		self.tagFile(new_filename,metadata,track.artwork_url)
+		try:
+			new_filename = self.getFile(filename,url)
+			return new_filename
+			self.tagFile(new_filename,metadata,track.artwork_url)
+		except KeyboardInterrupt:
+			print "\nExiting."
+			sys.exit(0)
+		except:
+			print "Cannot download " + track.title
+			pass
 				
 	def getPlaylists(self,playlists):
 		if isinstance(playlists,resource.ResourceList):
@@ -118,7 +125,7 @@ class Downloader():
 		if link is not None:
 			if silent:
 				try:
-					with closing(self.connectionHandler(link,True,5)) as response:
+					with closing(self.connectionHandler(link,True,15)) as response:
 						with open(new_filename,'wb') as file:
 							for chunk in response.iter_content(chunk_size=1024):
 								if chunk:
