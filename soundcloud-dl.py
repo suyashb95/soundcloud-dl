@@ -7,6 +7,7 @@ parser.add_argument('--dir',default = os.getcwd(), type = str, help = 'Directory
 parser.add_argument('--all',default = False,action = 'store_true', help = 'Download all tracks.(Uploads and likes)')
 parser.add_argument('--likes',default = False,action = 'store_true', help = 'Download only liked tracks.')
 parser.add_argument('--exclude',nargs = '+',type = int, help = 'Enter track numbers to exclude.')
+parser.add_argument('--include',nargs = '+',type = int, help = 'Enter track numbers to include.')
 
 if __name__ == '__main__':
 	args = parser.parse_args()

@@ -103,7 +103,10 @@ class Downloader():
 	def getUploadedTracks(self,user):
 		tracks = self.Resolver('/tracks',user.id)
 		for index,track in enumerate(tracks):
-			if  self.args.exclude is not None:
+			if self.args.include is not None:
+				if(index + 1) not in self.args.exclude:
+					continue
+			elif self.args.exclude is not None:
 				if (index + 1) in self.args.exclude:
 					print "Skipping " + str(track.title.encode('utf-8'))
 					continue
@@ -113,7 +116,10 @@ class Downloader():
 		liked_tracks = self.Resolver('/resolve',self.url + '/likes',True)
 		print str(len(liked_tracks)) + " liked track(s) found."
 		for index,track in enumerate(liked_tracks):
-			if self.args.exclude is not None:
+			if self.args.include is not None:
+				if(index + 1) not in self.args.exclude:
+					continue
+			elif self.args.exclude is not None:
 				if self.args.likes and index + 1 in self.args.exclude:
 					print "Skipping " + str(track.title.encode('utf-8'))
 					continue
@@ -312,7 +318,10 @@ class Downloader():
 					self.getPlaylists(data)
 				elif data[0].kind == 'track':
 					for index,track in enumerate(data):
-						if self.args.exclude is not None:
+						if self.args.include is not None:
+							if(index + 1) not in self.args.exclude:
+								continue
+						elif self.args.exclude is not None:
 							if (index + 1) in self.args.exclude:
 								print "Skipping " + str(track.title.encode('utf-8'))
 								continue
