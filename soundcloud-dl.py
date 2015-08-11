@@ -6,7 +6,7 @@ parser.add_argument('--url',default = None, type = str, help = 'URL to download 
 parser.add_argument('--dir',default = os.getcwd(), type = str, help = 'Directory to save tracks in. Default value is the current working directory.')
 parser.add_argument('--all',default = False,action = 'store_true', help = 'Download all tracks.(Uploads and likes)')
 parser.add_argument('--likes',default = False,action = 'store_true', help = 'Download only liked tracks.')
-parser.add_argument('--exclude',nargs = '+',type = int)
+parser.add_argument('--exclude',nargs = '+',type = int, help = 'Enter track numbers to exclude.')
 
 if __name__ == '__main__':
 	args = parser.parse_args()
