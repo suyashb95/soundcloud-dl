@@ -104,7 +104,7 @@ class Downloader():
 		tracks = self.Resolver('/tracks',user.id)
 		for index,track in enumerate(tracks):
 			if self.args.include is not None:
-				if(index + 1) not in self.args.exclude:
+				if(index + 1) not in self.args.include:
 					continue
 			elif self.args.exclude is not None:
 				if (index + 1) in self.args.exclude:
@@ -117,7 +117,7 @@ class Downloader():
 		print str(len(liked_tracks)) + " liked track(s) found."
 		for index,track in enumerate(liked_tracks):
 			if self.args.include is not None:
-				if(index + 1) not in self.args.exclude:
+				if self.args.likes and (index + 1) not in self.args.include:
 					continue
 			elif self.args.exclude is not None:
 				if self.args.likes and index + 1 in self.args.exclude:
@@ -319,7 +319,7 @@ class Downloader():
 				elif data[0].kind == 'track':
 					for index,track in enumerate(data):
 						if self.args.include is not None:
-							if(index + 1) not in self.args.exclude:
+							if(index + 1) not in self.args.include:
 								continue
 						elif self.args.exclude is not None:
 							if (index + 1) in self.args.exclude:
