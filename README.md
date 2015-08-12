@@ -11,7 +11,7 @@ A small command-line program to download tracks from soundcloud.com
 * `pip -install -r "requirements.txt"`
 
 ##Usage
-* usage: soundcloud-dl.py [-h] [--url URL] [--dir DIR] [--all] [--likes]
+* usage: soundcloud-dl.py [-h] [--url URL] [--dir DIR] [--all] [--likes] [--include] [--exclude] [--limit]
 * The url can be a link to a user, a track or a user's playlists. Downloads a user's uploads unless --all or --likes options are given
 * Adding the --include option overrides the --exclude option. 
 * Example : `python soundcloud-dl.py --url "https://soundcloud.com/stringofasymptotes" --dir "D:\Music"`
@@ -34,7 +34,7 @@ A small command-line program to download tracks from soundcloud.com
 * Mutagen - To tag mp3 files and add album art
 
 ###Contributions
-If you want to add features, improve them, or report issues, feel free to send a pull request!!
+If you want to add features, improve them, or report issues, feel free to send a pull request!
 
 ###Contributors
 - [Suyash458](https://github.com/Suyash458)
