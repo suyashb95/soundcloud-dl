@@ -8,9 +8,14 @@ parser.add_argument('--all',default = False,action = 'store_true', help = 'Downl
 parser.add_argument('--likes',default = False,action = 'store_true', help = 'Download only liked tracks.')
 parser.add_argument('--exclude',nargs = '+',type = int, help = 'Enter track numbers to exclude.')
 parser.add_argument('--include',nargs = '+',type = int, help = 'Enter track numbers to include.')
+parser.add_argument('--limit',default = None,type = int,help = 'Maximum number of tracks to download.')
 
 if __name__ == '__main__':
 	args = parser.parse_args()
+	if args.include is not None:
+		args.include = set(args.include)
+	if args.exclude is not None:
+		args.exclude = set(args.exclude)
 	if args.url == None:
 		print "No URL entered."
 		sys.exit(0)

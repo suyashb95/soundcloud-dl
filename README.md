@@ -26,6 +26,7 @@ A small command-line program to download tracks from soundcloud.com
      --likes     Download only liked tracks.
      --exclude   exclude a list of tracks.(takes track numbers)
      --include   specifically download a list of tracks.(takes track numbers)
+     --limit     limits the number of tracks to be downloaded.(Single integer)
   
 ###Dependencies
 * soundcloud - To work with the soundcloud API

@@ -19,6 +19,7 @@ class Downloader():
 		self.session = requests.Session()
 		self.session.mount("http://", requests.adapters.HTTPAdapter(max_retries=2))
 		self.session.mount("https://", requests.adapters.HTTPAdapter(max_retries=2))
+		self.completed = 0
 		
 	def Resolver(self,action,data,resolve = False):
 		try:
@@ -83,6 +84,7 @@ class Downloader():
 		try:
 			new_filename = self.getFile(filename,url)
 			return new_filename
+			self.completed += 1
 			self.tagFile(new_filename,metadata,track.artwork_url)
 		except KeyboardInterrupt:
 			sys.exit(0)
@@ -103,6 +105,9 @@ class Downloader():
 	def getUploadedTracks(self,user):
 		tracks = self.Resolver('/tracks',user.id)
 		for index,track in enumerate(tracks):
+			if self.args.limit is not None:
+				if self.completed > self.args.limit:
+					return
 			if self.args.include is not None:
 				if(index + 1) not in self.args.include:
 					continue
@@ -116,6 +121,9 @@ class Downloader():
 		liked_tracks = self.Resolver('/resolve',self.url + '/likes',True)
 		print str(len(liked_tracks)) + " liked track(s) found."
 		for index,track in enumerate(liked_tracks):
+			if self.args.limit is not None:
+				if self.completed > self.args.limit:
+					break
 			if self.args.include is not None:
 				if self.args.likes and (index + 1) not in self.args.include:
 					continue
