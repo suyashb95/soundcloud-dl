@@ -109,6 +109,8 @@ class Downloader():
 				if self.completed > self.args.limit:
 					return
 			if self.args.include is not None:
+				if self.completed == len(self.args.include):
+					break
 				if(index + 1) not in self.args.include:
 					continue
 			elif self.args.exclude is not None:
@@ -125,6 +127,8 @@ class Downloader():
 				if self.completed > self.args.limit:
 					break
 			if self.args.include is not None:
+				if self.completed == len(self.args.include) and self.args.likes:
+					break
 				if self.args.likes and (index + 1) not in self.args.include:
 					continue
 			elif self.args.exclude is not None:
@@ -326,7 +330,12 @@ class Downloader():
 					self.getPlaylists(data)
 				elif data[0].kind == 'track':
 					for index,track in enumerate(data):
+						if self.args.limit is not None:
+							if self.completed > self.args.limit:
+								return
 						if self.args.include is not None:
+							if self.completed == len(self.args.include):
+								break
 							if(index + 1) not in self.args.include:
 								continue
 						elif self.args.exclude is not None:
