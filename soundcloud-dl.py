@@ -9,9 +9,11 @@ parser.add_argument('--likes',default = False,action = 'store_true', help = 'Dow
 parser.add_argument('--exclude',nargs = '+',type = int, help = 'Enter track numbers to exclude.')
 parser.add_argument('--include',nargs = '+',type = int, help = 'Enter track numbers to include.')
 parser.add_argument('--limit',default = None,type = int,help = 'Maximum number of tracks to download.')
+parser.add_argument('--range',nargs = 2,type = int, help = 'Enter range of tracks to download.')
 
 if __name__ == '__main__':
 	args = parser.parse_args()
+	print args
 	if args.include is not None:
 		args.include = set(args.include)
 	if args.exclude is not None:

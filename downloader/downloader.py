@@ -33,7 +33,7 @@ class Downloader():
 				):
 			print "Connection error. Retrying in 15 seconds."
 			sleep(15)
-			return self.Resolver(action,data,resolve)
+			self.Resolver(action,data,resolve)
 		except requests.exceptions.HTTPError:
 			print "Invalid URL."
 			return
@@ -53,7 +53,7 @@ class Downloader():
 				socket.error):
 			print "Connection error. Retrying in 15 seconds."
 			sleep(15)
-			return self.connectionHandler(url,stream)
+			self.connectionHandler(url,stream)
 		except (AssertionError,
 				requests.exceptions.HTTPError):
 			print "Connection error or invalid URL."
@@ -106,16 +106,23 @@ class Downloader():
 		tracks = self.Resolver('/tracks',user.id)
 		for index,track in enumerate(tracks):
 			if self.args.limit is not None:
-				if self.completed > self.args.limit:
+				if self.completed == self.args.limit:
 					return
 			if self.args.include is not None:
 				if self.completed == len(self.args.include):
 					break
 				if(index + 1) not in self.args.include:
-					continue
+					if self.args.range:
+						if not (self.args.range[0] <= (index + 1) <= self.args.range[1]):
+							continue
+					else:
+						continue
 			elif self.args.exclude is not None:
 				if (index + 1) in self.args.exclude:
 					print "Skipping " + str(track.title.encode('utf-8'))
+					continue
+			if self.args.range is not None:
+				if not (self.args.range[0] <= (index + 1) <= self.args.range[1]):
 					continue
 			self.getSingleTrack(track)
 			
@@ -124,16 +131,23 @@ class Downloader():
 		print str(len(liked_tracks)) + " liked track(s) found."
 		for index,track in enumerate(liked_tracks):
 			if self.args.limit is not None:
-				if self.completed > self.args.limit:
-					break
+				if self.completed == self.args.limit:
+					return
 			if self.args.include is not None:
-				if self.completed == len(self.args.include) and self.args.likes:
+				if self.completed == len(self.args.include):
 					break
-				if self.args.likes and (index + 1) not in self.args.include:
-					continue
+				if(index + 1) not in self.args.include:
+					if self.args.range:
+						if not (self.args.range[0] <= (index + 1) <= self.args.range[1]):
+							continue
+					else:
+						continue
 			elif self.args.exclude is not None:
-				if self.args.likes and index + 1 in self.args.exclude:
+				if (index + 1) in self.args.exclude:
 					print "Skipping " + str(track.title.encode('utf-8'))
+					continue
+			if self.args.range is not None:
+				if not (self.args.range[0] <= (index + 1) <= self.args.range[1]):
 					continue
 			self.getSingleTrack(track)
 		
@@ -158,7 +172,7 @@ class Downloader():
 					return new_filename
 				except (socket.error,
 						requests.exceptions.ConnectionError):
-					return self.getFile(filename,link,silent)
+					self.getFile(filename,link,silent)
 				except KeyboardInterrupt:
 					print "\nExiting."
 					sys.exit(0)
@@ -188,13 +202,13 @@ class Downloader():
 						os.remove(new_filename)			
 						print "\nConnection error. Restarting in 15 seconds."
 						sleep(15)
-						return self.getFile(filename,link,silent)
+						self.getFile(filename,link,silent)
 					print "\nDownload complete."
 					return new_filename
 				except (socket.error,
 						requests.exceptions.ConnectionError):
 					os.remove(new_filename)					
-					return self.getFile(filename,link,silent)
+					self.getFile(filename,link,silent)
 				except KeyboardInterrupt:
 					print "\nExiting."
 					os.remove(new_filename)
@@ -331,18 +345,26 @@ class Downloader():
 				elif data[0].kind == 'track':
 					for index,track in enumerate(data):
 						if self.args.limit is not None:
-							if self.completed > self.args.limit:
+							if self.completed == self.args.limit:
 								return
 						if self.args.include is not None:
 							if self.completed == len(self.args.include):
 								break
-							if(index + 1) not in self.args.include:
+						if(index + 1) not in self.args.include:
+							if self.args.range:
+								if not (self.args.range[0] <= (index + 1) <= self.args.range[1]):
+									continue
+							else:
 								continue
 						elif self.args.exclude is not None:
 							if (index + 1) in self.args.exclude:
 								print "Skipping " + str(track.title.encode('utf-8'))
 								continue
+						if self.args.range is not None:
+							if not (self.args.range[0] <= (index + 1) <= self.args.range[1]):
+								continue
 						self.getSingleTrack(track)
+		
 		else:
 			print "Network error or Invalid URL."
 			sys.exit(0)
