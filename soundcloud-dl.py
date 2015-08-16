@@ -13,7 +13,6 @@ parser.add_argument('--range',nargs = 2,type = int, help = 'Enter range of track
 
 if __name__ == '__main__':
 	args = parser.parse_args()
-	print args
 	if args.include is not None:
 		args.include = set(args.include)
 	if args.exclude is not None:
