@@ -121,9 +121,6 @@ class Downloader():
 				if (index + 1) in self.args.exclude:
 					print "Skipping " + str(track.title.encode('utf-8'))
 					continue
-			if self.args.range is not None:
-				if not (self.args.range[0] <= (index + 1) <= self.args.range[1]):
-					continue
 			self.getSingleTrack(track)
 			
 	def getLikedTracks(self,user):
@@ -145,9 +142,6 @@ class Downloader():
 			elif self.args.exclude is not None:
 				if (index + 1) in self.args.exclude:
 					print "Skipping " + str(track.title.encode('utf-8'))
-					continue
-			if self.args.range is not None:
-				if not (self.args.range[0] <= (index + 1) <= self.args.range[1]):
 					continue
 			self.getSingleTrack(track)
 		
@@ -359,9 +353,6 @@ class Downloader():
 						elif self.args.exclude is not None:
 							if (index + 1) in self.args.exclude:
 								print "Skipping " + str(track.title.encode('utf-8'))
-								continue
-						if self.args.range is not None:
-							if not (self.args.range[0] <= (index + 1) <= self.args.range[1]):
 								continue
 						self.getSingleTrack(track)
 		
