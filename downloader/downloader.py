@@ -98,8 +98,8 @@ class Downloader():
 				for track in playlist.tracks:
 					self.getSingleTrack(track)
 		else:
-			print "%d tracks found in this playlist" % (len(playlist.tracks))
-			for track in playlists:
+			print "%d tracks found in this playlist" % (len(playlists.tracks))
+			for track in playlists.tracks:
 				self.getSingleTrack(track)
 			
 	def getUploadedTracks(self,user):
