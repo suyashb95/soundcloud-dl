@@ -19,9 +19,12 @@ def main():
 	if args.url == None:
 		print "No URL entered."
 		sys.exit(0)
-	downloader = downloader.Downloader(args)
+	downloaderObject = downloader.Downloader(args)
 	try:
-		downloader.Download()
+		downloaderObject.Download()
 	except KeyboardInterrupt:
 		print "\nExiting."
 		sys.exit(0)
+		
+if __name__ == '__main__':
+	main()
