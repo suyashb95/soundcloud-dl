@@ -98,57 +98,40 @@ class soundcloudDownloader(object):
             print "%d tracks found in this playlist" % (len(playlists.tracks))
             for track in playlists.tracks:
                 self.getSingleTrack(track)
-
+    
+    def checkTrackNumber(self,index):
+        if self.args.limit is not None:
+            if self.completed == self.args.limit:
+                return
+        if self.args.include is not None:
+            if index + 1 not in self.args.include:
+                if not self.args.range:
+                    return False
+        if self.args.exclude is not None:
+            if index + 1 in self.args.exclude:
+                print "Skipping " + str(track.title.encode('utf-8'))
+                return False
+        if self.args.range is not None:
+            if not self.args.range[0] <= index + 1 <= self.args.range[1]:
+                if self.args.include:
+                    if index + 1 not in self.args.include:
+                        return False
+                else:
+                    return False
+        return True
+        
     def getUploadedTracks(self, user):
         tracks = self.Resolver('/tracks', user.id)
         for index, track in enumerate(tracks):
-            if self.args.limit is not None:
-                if self.completed == self.args.limit:
-                    return
-            if self.args.include is not None:
-                if index + 1 not in self.args.include:
-                    if self.args.range:
-                        pass
-                    else:
-                        continue
-            if self.args.exclude is not None:
-                if index + 1 in self.args.exclude:
-                    print "Skipping " + str(track.title.encode('utf-8'))
-                    continue
-            if self.args.range is not None:
-                if not self.args.range[0] <= index + 1 <= self.args.range[1]:
-                    if self.args.include:
-                        if index + 1 not in self.args.include:
-                            continue
-                    else:
-                        continue
-            self.getSingleTrack(track)
+            if self.checkTrackNumber(index):
+                self.getSingleTrack(track)
 
     def getLikedTracks(self):
         liked_tracks = self.Resolver('/resolve', self.url + '/likes', True)
         print str(len(liked_tracks)) + " liked track(s) found."
         for index, track in enumerate(liked_tracks):
-            if self.args.limit is not None:
-               if self.completed == self.args.limit:
-                    return
-            if self.args.include is not None:
-                if index + 1 not in self.args.include:
-                    if self.args.range:
-                        pass
-                    else:
-                        continue
-            if self.args.exclude is not None:
-                if index + 1 in self.args.exclude:
-                    print "Skipping " + str(track.title.encode('utf-8'))
-                    continue
-            if self.args.range is not None:
-                if not self.args.range[0] <= index + 1 <= self.args.range[1]:
-                    if self.args.include:
-                        if index + 1 not in self.args.include:
-                            continue
-                    else:
-                        continue
-            self.getSingleTrack(track)
+            if self.checkTrackNumber(index):
+                self.getSingleTrack(track)
 
     def progressBar(self, done, file_size):
         percentage = ((done/file_size)*100)
@@ -157,8 +140,11 @@ class soundcloudDownloader(object):
         sys.stdout.write('[' + '#'*int((percentage/5)) + ' '*int((100-percentage)/5) + '] ')
         sys.stdout.write(' | %.2f' % percentage + ' %')
 
+    def validateName(self, name):
+        return  re.sub('[\\/:*"?<>|]', '_', name)
+
     def getFile(self, filename, link, silent=False):
-        new_filename = re.sub('[\\/:*"?<>|]', '_', filename)
+        new_filename = self.validateName(filename)
         if link is not None:
             if silent:
                 try:
@@ -303,7 +289,7 @@ class soundcloudDownloader(object):
             if isinstance(data, resource.Resource):
                 if data.kind == 'user':
                     print "User profile found."
-                    folder = re.sub('[\\/:*"?<>|]', '_', data.username.encode('utf-8'))
+                    folder = self.validateName(data.username.encode('utf-8'))
                     if not os.path.isdir(folder):
                         os.mkdir(folder)
                     os.chdir(os.getcwd() + '\\' + str(folder))
@@ -321,7 +307,7 @@ class soundcloudDownloader(object):
                     self.getSingleTrack(data)
                 elif data.kind == 'playlist':
                     print "Single playlist found."
-                    folder = re.sub('[\\/:*"?<>|]', '_', data.user['username'].encode('utf-8'))
+                    folder = self.validateName(data.user['username'].encode('utf-8'))
                     if not os.path.isdir(folder):
                         os.mkdir(folder)
                     os.chdir(os.getcwd() + '\\' + str(folder))
@@ -330,9 +316,9 @@ class soundcloudDownloader(object):
                 if self.url.endswith('likes'):
                     user_url = self.url[:-6]
                     user = self.Resolver('/resolve', user_url, True)
-                    folder = re.sub('[\\/:*"?<>|]', '_', user.username.encode('utf-8'))
+                    folder = self.validateName(user.username.encode('utf-8'))
                 else:
-                    folder = re.sub('[\\/:*"?<>|]', '_', data[0].user['username'].encode('utf-8'))
+                    folder = self.validateName(data[0].user['username'].encode('utf-8'))
                 if not os.path.isdir(folder):
                     os.mkdir(folder)
                 os.chdir(os.getcwd() + '\\' + str(folder))
@@ -341,28 +327,7 @@ class soundcloudDownloader(object):
                     print "%d playlists found." % (len(data))
                     self.getPlaylists(data)
                 elif data[0].kind == 'track':
-                    for index, track in enumerate(data):
-                        if self.args.limit is not None:
-                            if self.completed == self.args.limit:
-                                return
-                        if self.args.include is not None:
-                            if index + 1 not in self.args.include:
-                                if self.args.range:
-                                    pass
-                                else:
-                                    continue
-                        if self.args.exclude is not None:
-                            if index + 1 in self.args.exclude:
-                                print "Skipping " + str(track.title.encode('utf-8'))
-                                continue
-                        if self.args.range is not None:
-                            if not self.args.range[0] <= index + 1 <= self.args.range[1]:
-                                if self.args.include:
-                                    if index + 1 not in self.args.include:
-                                        continue
-                                else:
-                                    continue
-                        self.getSingleTrack(track)
+                     self.getUploadedTracks(data)
 
         else:
             print "Network error or Invalid URL."
