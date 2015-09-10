@@ -26,7 +26,7 @@ class soundcloudDownloader(object):
         self.session.mount("https://", requests.adapters.HTTPAdapter(max_retries=2))
         self.completed = 0
 
-    def Resolver(self, action, data, resolve=False):
+    def resolver(self, action, data, resolve=False):
         try:
             if resolve:
                 data = self.client.get(str(action), url=str(data))
@@ -37,7 +37,7 @@ class soundcloudDownloader(object):
                 socket.error):
             print "Connection error. Retrying in 15 seconds."
             sleep(15)
-            self.Resolver(action, data, resolve)
+            self.resolver(action, data, resolve)
         except requests.exceptions.HTTPError:
             print "Invalid URL."
             return
@@ -135,13 +135,13 @@ class soundcloudDownloader(object):
         return True
 
     def getUploadedTracks(self, user):
-        tracks = self.Resolver('/tracks', user.id)
+        tracks = self.resolver('/tracks', user.id)
         for index, track in enumerate(tracks):
             if self.checkTrackNumber(index):
                 self.getSingleTrack(track)
 
     def getLikedTracks(self):
-        liked_tracks = self.Resolver('/resolve', self.url + '/likes', True)
+        liked_tracks = self.resolver('/resolve', self.url + '/likes', True)
         print str(len(liked_tracks)) + " liked track(s) found."
         for index, track in enumerate(liked_tracks):
             if self.checkTrackNumber(index):
@@ -298,7 +298,7 @@ class soundcloudDownloader(object):
         except WindowsError:
             print "Invalid Directory"
             return
-        data = self.Resolver('/resolve', self.url, True)
+        data = self.resolver('/resolve', self.url, True)
         if data is not None:
             if isinstance(data, resource.Resource):
                 if data.kind == 'user':
@@ -329,7 +329,7 @@ class soundcloudDownloader(object):
             elif isinstance(data, resource.ResourceList):
                 if self.url.endswith('likes'):
                     user_url = self.url[:-6]
-                    user = self.Resolver('/resolve', user_url, True)
+                    user = self.resolver('/resolve', user_url, True)
                     folder = self.validateName(user.username.encode('utf-8'))
                 else:
                     folder = self.validateName(data[0].user['username'].encode('utf-8'))
