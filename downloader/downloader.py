@@ -1,4 +1,8 @@
-import soundcloud, requests, os, re, sys
+import requests
+import os
+import re
+import sys
+import soundcloud
 from config import secret, browser_id
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4, MP4Cover
@@ -8,6 +12,7 @@ from soundcloud import resource
 from time import sleep
 from contextlib import closing
 import socket
+
 
 class soundcloudDownloader(object):
 
@@ -64,24 +69,33 @@ class soundcloudDownloader(object):
     def getSingleTrack(self, track):
         if not isinstance(track, resource.Resource):
             track = resource.Resource(track)
-        metadata = {'title':track.title.encode('utf-8'),
-                    'artist':track.user['username'].encode('utf-8'),
-                    'year':track.release_year,
-                    'genre':track.genre.encode('utf-8')}
+        metadata = {
+            'title': track.title.encode('utf-8'),
+            'artist': track.user['username'].encode('utf-8'),
+            'year': track.release_year,
+            'genre': track.genre.encode('utf-8')
+        }
         try:
             if track.downloadable:
-                filename = (track.user['username'] + ' - ' + \
-                track.title + '.' + track.original_format).encode('utf-8')
+                filename = (
+                    track.user['username'] + ' - '
+                    + track.title + '.'
+                    + track.original_format
+                ).encode('utf-8')
                 url = track.download_url + '?client_id='+secret
             else:
-                filename = (track.user['username'] + ' - ' + \
-                track.title + '.mp3').encode('utf-8')
+                filename = (
+                    track.user['username'] + ' - '
+                    + track.title + '.mp3'
+                ).encode('utf-8')
                 url = track.stream_url + '?client_id='+secret
         except AttributeError:
-            filename = (track.user['username'] + ' - ' +  \
-            track.title + '.mp3').encode('utf-8')
+            filename = (
+                track.user['username'] + ' - '
+                + track.title + '.mp3'
+            ).encode('utf-8')
             url = 'https://api.soundcloud.com/tracks/' + \
-            str(track.id) + '/stream?client_id=' + browser_id
+                str(track.id) + '/stream?client_id=' + browser_id
         try:
             new_filename = self.getFile(filename, url)
             self.completed += 1
@@ -98,8 +112,8 @@ class soundcloudDownloader(object):
             print "%d tracks found in this playlist" % (len(playlists.tracks))
             for track in playlists.tracks:
                 self.getSingleTrack(track)
-    
-    def checkTrackNumber(self,index):
+
+    def checkTrackNumber(self, index):
         if self.args.limit is not None:
             if self.completed == self.args.limit:
                 return
@@ -109,7 +123,7 @@ class soundcloudDownloader(object):
                     return False
         if self.args.exclude is not None:
             if index + 1 in self.args.exclude:
-                print "Skipping " + str(track.title.encode('utf-8'))
+                print "Skipping track number " + str(index)
                 return False
         if self.args.range is not None:
             if not self.args.range[0] <= index + 1 <= self.args.range[1]:
@@ -119,7 +133,7 @@ class soundcloudDownloader(object):
                 else:
                     return False
         return True
-        
+
     def getUploadedTracks(self, user):
         tracks = self.Resolver('/tracks', user.id)
         for index, track in enumerate(tracks):
@@ -141,7 +155,7 @@ class soundcloudDownloader(object):
         sys.stdout.write(' | %.2f' % percentage + ' %')
 
     def validateName(self, name):
-        return  re.sub('[\\/:*"?<>|]', '_', name)
+        return re.sub('[\\/:*"?<>|]', '_', name)
 
     def getFile(self, filename, link, silent=False):
         new_filename = self.validateName(filename)
@@ -163,7 +177,7 @@ class soundcloudDownloader(object):
                     sys.exit(0)
             print "\nConnecting to stream..."
             with closing(self.connectionHandler(link, True, 5)) as response:
-                print "Response: "+ str(response.status_code)
+                print "Response: " + str(response.status_code)
                 file_size = float(response.headers['content-length'])
                 if os.path.isfile(new_filename):
                     if os.path.getsize(new_filename) >= long(file_size):
@@ -327,7 +341,7 @@ class soundcloudDownloader(object):
                     print "%d playlists found." % (len(data))
                     self.getPlaylists(data)
                 elif data[0].kind == 'track':
-                     self.getUploadedTracks(data)
+                    self.getUploadedTracks(data)
 
         else:
             print "Network error or Invalid URL."
