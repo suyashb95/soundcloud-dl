@@ -7,7 +7,7 @@ from mutagen.id3 import ID3, TIT2, TPE1, TCON, TDRC, APIC
 from soundcloud import resource
 from time import sleep
 from contextlib import closing
-import socket
+import socket, json
 
 class soundcloudDownloader(object):
 
@@ -35,7 +35,7 @@ class soundcloudDownloader(object):
             self.Resolver(action, data, resolve)
         except requests.exceptions.HTTPError:
             print "Invalid URL."
-            return
+            sys.exit(0)
         except KeyboardInterrupt:
             print "Exiting."
             sys.exit(0)
@@ -62,30 +62,32 @@ class soundcloudDownloader(object):
             sys.exit(0)
 
     def getSingleTrack(self, track):
-        if not isinstance(track, resource.Resource):
-            track = resource.Resource(track)
-        metadata = {'title':track.title.encode('utf-8'),
-                    'artist':track.user['username'].encode('utf-8'),
-                    'year':track.release_year,
-                    'genre':track.genre.encode('utf-8')}
+        if isinstance(track, resource.Resource):
+            track = track.fields()
+        metadata = {
+            'title':track['title'].encode('utf-8'),
+            'artist':track['user']['username'].encode('utf-8'),
+            'year':track.get('release_year', ''),
+            'genre':track['genre'].encode('utf-8')
+        }
         try:
-            if track.downloadable:
-                filename = (track.user['username'] + ' - ' + \
-                track.title + '.' + track.original_format).encode('utf-8')
-                url = track.download_url + '?client_id='+secret
+            if track['downloadable']:
+                filename = (track['user']['username'] + ' - ' + \
+                track['title'] + '.' + track['original_format']).encode('utf-8')
+                url = track['download_url'] + '?client_id='+secret
             else:
-                filename = (track.user['username'] + ' - ' + \
-                track.title + '.mp3').encode('utf-8')
-                url = track.stream_url + '?client_id='+secret
+                filename = (track['user']['username'] + ' - ' + \
+                track['title'] + '.mp3').encode('utf-8')
+                url = track['stream_url'].split('?')[0] + '?client_id='+secret
         except AttributeError:
-            filename = (track.user['username'] + ' - ' +  \
-            track.title + '.mp3').encode('utf-8')
+            filename = (track['user']['username'] + ' - ' +  \
+            track['title'] + '.mp3').encode('utf-8')
             url = 'https://api.soundcloud.com/tracks/' + \
-            str(track.id) + '/stream?client_id=' + browser_id
+            str(track['id']) + '/stream?client_id=' + secret
         try:
             new_filename = self.getFile(filename, url)
             self.completed += 1
-            self.tagFile(new_filename, metadata, track.artwork_url)
+            self.tagFile(new_filename, metadata, track['artwork_url'])
         except KeyboardInterrupt:
             sys.exit(0)
 
@@ -119,12 +121,22 @@ class soundcloudDownloader(object):
                 else:
                     return False
         return True
-        
+
     def getUploadedTracks(self, user):
         tracks = self.Resolver('/tracks', user.id)
         for index, track in enumerate(tracks):
             if self.checkTrackNumber(index):
-                self.getSingleTrack(track)
+                self.getSingleTrack(track)				
+
+    def getRecommendedTracks(self, track, no_tracks):
+        recommended_tracks_url = "https://api-v2.soundcloud.com/tracks/"
+        recommended_tracks_url += str(track.id) + "/related?client_id="
+        recommended_tracks_url += str(browser_id) + "&limit="
+        recommended_tracks_url += str(no_tracks) + "&offset=0"
+        recommended_tracks = self.session.get(recommended_tracks_url)
+        recommended_tracks = json.loads(recommended_tracks.text)['collection']
+        for track in recommended_tracks:
+            self.getSingleTrack(track)
 
     def getLikedTracks(self):
         liked_tracks = self.Resolver('/resolve', self.url + '/likes', True)
@@ -199,7 +211,7 @@ class soundcloudDownloader(object):
                     os.remove(new_filename)
                     raise KeyboardInterrupt
         else:
-            return None
+            return new_filename
 
     def tagFile(self, filename, metadata, art_url):
         image = None
@@ -226,7 +238,10 @@ class soundcloudDownloader(object):
                     )
                 )
             audio.tags["TIT2"] = TIT2(encoding=3, text=metadata['title'])
-            audio.tags["TPE1"] = TPE1(encoding=3, text=metadata['artist'])
+            try:
+                audio.tags["TPE1"] = TPE1(encoding=3, text=metadata['artist'].encode('utf-8'))
+            except:
+                pass
             audio.tags["TDRC"] = TDRC(encoding=3, text=unicode(metadata['year']))
             audio.tags["TCON"] = TCON(encoding=3, text=metadata['genre'])
             audio.save()
@@ -302,9 +317,14 @@ class soundcloudDownloader(object):
                     else:
                         self.getUploadedTracks(data)
                 elif data.kind == 'track':
-                    print "Single track found."
-                    print "Saving in : " + os.getcwd()
-                    self.getSingleTrack(data)
+                    if 'recommended'  in self.url: 
+                        no_tracks = self.args.limit if self.args.limit else 5
+                        print "Downloading " + str(no_tracks) + " related tracks"
+                        self.getRecommendedTracks(data, no_tracks)
+                    else:
+                        print "Single track found."
+                        print "Saving in : " + os.getcwd()
+                        self.getSingleTrack(data)
                 elif data.kind == 'playlist':
                     print "Single playlist found."
                     folder = self.validateName(data.user['username'].encode('utf-8'))
