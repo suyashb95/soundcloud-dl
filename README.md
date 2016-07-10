@@ -12,7 +12,7 @@ A small command-line program to download tracks from soundcloud.com
 * Clone the repo or download the zip
 * Make sure you have pip installed
 * `cd` to the folder
-* `pip -install -r "requirements.txt"`
+* `pip install -r "requirements.txt"`
 
 ##Usage
 * usage: soundcloud-dl.py [-h] [--url URL] [--dir DIR] [--all] [--likes] [--include] [--exclude] [--limit]
