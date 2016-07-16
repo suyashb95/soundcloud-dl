@@ -70,20 +70,27 @@ class soundcloudDownloader(object):
             'year':track.get('release_year', ''),
             'genre':track['genre'].encode('utf-8')
         }
-        try:
-            if track['downloadable']:
+        if track['downloadable']:
+            try:
                 filename = (track['user']['username'] + ' - ' + \
                 track['title'] + '.' + track['original_format']).encode('utf-8')
                 url = track['download_url'] + '?client_id='+secret
-            else:
+            except:
                 filename = (track['user']['username'] + ' - ' + \
                 track['title'] + '.mp3').encode('utf-8')
-                url = track['stream_url'].split('?')[0] + '?client_id='+secret
-        except AttributeError:
-            filename = (track['user']['username'] + ' - ' +  \
+                try:
+                    url = track['stream_url'].split('?')[0] + '?client_id='+secret
+                except KeyError:
+                    url = 'https://api.soundcloud.com/tracks/' + \
+                        str(track['id']) + '/stream?client_id=' + secret 
+        else:
+            filename = (track['user']['username'] + ' - ' + \
             track['title'] + '.mp3').encode('utf-8')
-            url = 'https://api.soundcloud.com/tracks/' + \
-            str(track['id']) + '/stream?client_id=' + secret
+            try:
+                url = track['stream_url'].split('?')[0] + '?client_id='+secret
+            except KeyError:
+                url = 'https://api.soundcloud.com/tracks/' + \
+                    str(track['id']) + '/stream?client_id=' + secret
         try:
             new_filename = self.getFile(filename, url)
             self.completed += 1
