@@ -167,6 +167,8 @@ class soundcloudDownloader(object):
         if link is not None:
             if silent:
                 try:
+                    #print link
+                    link = link.replace('https', 'http')
                     with closing(self.connectionHandler(link, True, 15)) as response:
                         with open(new_filename, 'wb') as file:
                             for chunk in response.iter_content(chunk_size=1024):
@@ -174,12 +176,17 @@ class soundcloudDownloader(object):
                                     file.write(chunk)
                                     file.flush()
                     return new_filename
-                except (socket.error,
-                        requests.exceptions.ConnectionError):
-                    self.getFile(filename, link, silent)
+#                except (socket.error,
+#                        requests.exceptions.ConnectionError):
+#                    self.getFile(filename, link, silent)
                 except KeyboardInterrupt:
                     print "\nExiting."
                     sys.exit(0)
+                except:
+                    os.remove(filename)
+                    sleep(15)
+                    self.getFile(filename, link, silent)
+
             print "\nConnecting to stream..."
             with closing(self.connectionHandler(link, True, 5)) as response:
                 print "Response: "+ str(response.status_code)
@@ -187,6 +194,7 @@ class soundcloudDownloader(object):
                 if os.path.isfile(new_filename):
                     if os.path.getsize(new_filename) >= long(file_size):
                         print new_filename + " already exists, skipping."
+                        self.file_done = False
                         return new_filename
                     else:
                         os.remove(new_filename)
@@ -208,6 +216,7 @@ class soundcloudDownloader(object):
                         sleep(15)
                         self.getFile(filename, link, silent)
                     print "\nDownload complete."
+                    self.file_done = True
                     return new_filename
                 except (socket.error,
                         requests.exceptions.ConnectionError):
@@ -221,6 +230,10 @@ class soundcloudDownloader(object):
             return new_filename
 
     def tagFile(self, filename, metadata, art_url):
+        if not self.file_done:
+            print 'Skip tagFile()'
+            return
+
         image = None
         if art_url is not None:
             self.getFile('artwork.jpg', art_url, True)
@@ -244,13 +257,14 @@ class soundcloudDownloader(object):
                     data=image
                     )
                 )
-            audio.tags["TIT2"] = TIT2(encoding=3, text=metadata['title'])
+            audio.tags["TIT2"] = TIT2(encoding=3, text=unicode(metadata['title'].decode('utf-8')))
             try:
                 audio.tags["TPE1"] = TPE1(encoding=3, text=metadata['artist'].encode('utf-8'))
             except:
                 pass
             audio.tags["TDRC"] = TDRC(encoding=3, text=unicode(metadata['year']))
-            audio.tags["TCON"] = TCON(encoding=3, text=metadata['genre'])
+            print metadata['genre']
+            audio.tags["TCON"] = TCON(encoding=3, text=unicode(metadata['genre'].decode('utf-8')))
             audio.save()
         elif filename.endswith('.flac'):
             audio = FLAC(filename)
@@ -314,7 +328,7 @@ class soundcloudDownloader(object):
                     folder = self.validateName(data.username.encode('utf-8'))
                     if not os.path.isdir(folder):
                         os.mkdir(folder)
-                    os.chdir(os.getcwd() + '\\' + str(folder))
+                    os.chdir(os.path.join(os.getcwd(), str(folder)))
                     print "Saving in : " + os.getcwd()
                     if self.args.all:
                         self.getUploadedTracks(data)
@@ -337,7 +351,7 @@ class soundcloudDownloader(object):
                     folder = self.validateName(data.user['username'].encode('utf-8'))
                     if not os.path.isdir(folder):
                         os.mkdir(folder)
-                    os.chdir(os.getcwd() + '\\' + str(folder))
+                    os.chdir(os.path.join(os.getcwd(), str(folder)))
                     self.getPlaylists(data)
             elif isinstance(data, resource.ResourceList):
                 if self.url.endswith('likes'):
@@ -348,7 +362,7 @@ class soundcloudDownloader(object):
                     folder = self.validateName(data[0].user['username'].encode('utf-8'))
                 if not os.path.isdir(folder):
                     os.mkdir(folder)
-                os.chdir(os.getcwd() + '\\' + str(folder))
+                os.chdir(os.path.join(os.getcwd(), str(folder)))
                 print "Saving in : " + os.getcwd()
                 if data[0].kind == 'playlist':
                     print "%d playlists found." % (len(data))
