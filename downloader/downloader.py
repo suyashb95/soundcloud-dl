@@ -368,7 +368,8 @@ class soundcloudDownloader(object):
                     print "%d playlists found." % (len(data))
                     self.getPlaylists(data)
                 elif data[0].kind == 'track':
-                     self.getUploadedTracks(data)
+                	for track in data:
+                		self.getSingleTrack(track)
 
         else:
             print "Network error or Invalid URL."
