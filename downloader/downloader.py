@@ -67,8 +67,8 @@ class soundcloudDownloader(object):
         metadata = {
             'title':track['title'].encode('utf-8'),
             'artist':track['user']['username'].encode('utf-8'),
-            'year':track.get('release_year', ''),
-            'genre':track['genre'].encode('utf-8')
+            'year': track['release_year'].encode('utf-8') if track['release_year'] else '',
+            'genre': track['genre'].encode('utf-8') if track['genre'] else ''
         }
         if track['downloadable']:
             try:
@@ -105,8 +105,9 @@ class soundcloudDownloader(object):
                     self.getSingleTrack(track)
         else:
             print "%d tracks found in this playlist" % (len(playlists.tracks))
-            for track in playlists.tracks:
-                self.getSingleTrack(track)
+            for index, track in enumerate(playlists.tracks):
+				if self.checkTrackNumber(index):
+					self.getSingleTrack(track)	
     
     def checkTrackNumber(self,index):
         if self.args.limit is not None:
@@ -231,9 +232,7 @@ class soundcloudDownloader(object):
 
     def tagFile(self, filename, metadata, art_url):
         if not self.file_done:
-            print 'Skip tagFile()'
             return
-
         image = None
         if art_url is not None:
             self.getFile('artwork.jpg', art_url, True)
@@ -257,14 +256,13 @@ class soundcloudDownloader(object):
                     data=image
                     )
                 )
-            audio.tags["TIT2"] = TIT2(encoding=3, text=unicode(metadata['title'].decode('utf-8')))
+            audio.tags["TIT2"] = TIT2(encoding=3, text=unicode(metadata.get('title', '').decode('utf-8')))
             try:
-                audio.tags["TPE1"] = TPE1(encoding=3, text=metadata['artist'].encode('utf-8'))
+                audio.tags["TPE1"] = TPE1(encoding=3, text=metadata.get('artist', '').encode('utf-8'))
             except:
                 pass
-            audio.tags["TDRC"] = TDRC(encoding=3, text=unicode(metadata['year']))
-            print metadata['genre']
-            audio.tags["TCON"] = TCON(encoding=3, text=unicode(metadata['genre'].decode('utf-8')))
+            audio.tags["TDRC"] = TDRC(encoding=3, text=unicode(metadata.get('year', '')))
+            audio.tags["TCON"] = TCON(encoding=3, text=unicode(metadata.get('genre', ' ').decode('utf-8')))
             audio.save()
         elif filename.endswith('.flac'):
             audio = FLAC(filename)
