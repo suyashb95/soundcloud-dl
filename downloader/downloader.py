@@ -65,10 +65,10 @@ class soundcloudDownloader(object):
         if isinstance(track, resource.Resource):
             track = track.fields()
         metadata = {
-            'title':track.get('title', '').encode('utf-8'),
+            'title':str(track.get('title', '')).encode('utf-8'),
             'artist':track['user']['username'].encode('utf-8'),
-            'year': track.get('release_year', '').encode('utf-8'),
-            'genre': track.get('genre', '').encode('utf-8')
+            'year': str(track.get('release_year', '')).encode('utf-8'),
+            'genre': str(track.get('genre', '')).encode('utf-8')
         }
         if track['downloadable']:
             try:
