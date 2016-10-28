@@ -247,15 +247,16 @@ class soundcloudDownloader(object):
                 audio.add_tags()
             except:
                 pass
-            audio.tags.add(
-                APIC(
-                    encoding=3,
-                    mime='image/jpeg',
-                    type=3,
-                    desc=u'Cover',
-                    data=image
+            if image:
+                audio.tags.add(
+                    APIC(
+                        encoding=3,
+                        mime='image/jpeg',
+                        type=3,
+                        desc=u'Cover',
+                        data=image
+                        )
                     )
-                )
             audio.tags["TIT2"] = TIT2(encoding=3, text=unicode(metadata.get('title', '').decode('utf-8')))
             try:
                 audio.tags["TPE1"] = TPE1(encoding=3, text=metadata.get('artist', '').encode('utf-8'))
