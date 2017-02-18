@@ -3,8 +3,8 @@ import sys, argparse, os
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--url', default=None, type=str,
-                        help='URL to download tracks from.')
+    parser.add_argument('url', default=None, type=str, nargs='?',
+                        help='URL to download tracks from. (Positional Argument)')
     parser.add_argument('--dir', default=os.getcwd(), type=str,
                         help='''Directory to save tracks in.
                         Default value is the current working directory.''')
@@ -26,13 +26,13 @@ def main():
         args.include = set(args.include)
     if args.exclude is not None:
         args.exclude = set(args.exclude)
-    if args.url == None:
-        print "No URL entered."
+    if args.url is None:
+        print("No URL entered.")
         sys.exit(0)
     try:
         downloaderObject.Download()
     except KeyboardInterrupt:
-        print "\nExiting."
+        print("\nExiting.")
         sys.exit(0)
 
 if __name__ == '__main__':
