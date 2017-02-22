@@ -11,7 +11,6 @@ import socket, json
 from .config import secret, browser_id
 
 class soundcloudDownloader(object):
-
 	def __init__(self, args=None):
 		self.args = args
 		self.url = args.url
@@ -43,9 +42,9 @@ class soundcloudDownloader(object):
 		if data is not None:
 			return data
 
-	def connectionHandler(self, url, stream=False, timeout=15):
+	def connectionHandler(self, url, stream=False, timeout=15, payload={}):
 		try:
-			response = self.session.get(url, stream=stream, timeout=timeout)
+			response = self.session.get(url, stream=stream, timeout=timeout, params=payload)
 			assert response.status_code == 200
 			return response
 		except (requests.exceptions.ConnectionError,
@@ -63,12 +62,11 @@ class soundcloudDownloader(object):
 			sys.exit(0)
 
 	def getSingleTrack(self, track):
-
 		if isinstance(track, resource.Resource):
 			track = track.fields()
 		metadata = {
 			'title':str(track.get('title', '')),
-			'artist':track['user']['username'],
+			'artist': track['user']['username'],
 			'year': str(track.get('release_year', '')),
 			'genre': str(track.get('genre', ''))
 		}
@@ -84,7 +82,7 @@ class soundcloudDownloader(object):
 					url = track['stream_url'].split('?')[0] + '?client_id='+secret
 				except KeyError:
 					url = 'https://api.soundcloud.com/tracks/' + \
-						str(track['id']) + '/stream?client_id=' + secret 
+						str(track['id']) + '/stream?client_id=' + browser_id 
 		else:
 			filename = (track['user']['username'] + ' - ' + \
 			track['title'] + '.mp3')
@@ -92,7 +90,7 @@ class soundcloudDownloader(object):
 				url = track['stream_url'].split('?')[0] + '?client_id='+secret
 			except KeyError:
 				url = 'https://api.soundcloud.com/tracks/' + \
-					str(track['id']) + '/stream?client_id=' + secret
+					str(track['id']) + '/stream?client_id=' + browser_id
 		try:
 			new_filename = self.getFile(filename, url)
 			self.completed += 1
@@ -114,7 +112,7 @@ class soundcloudDownloader(object):
 	def checkTrackNumber(self, index):
 		if self.args.limit is not None:
 			if self.completed == self.args.limit:
-				return
+				return False
 		if self.args.include is not None:
 			if index + 1 not in self.args.include:
 				if not self.args.range:
@@ -257,8 +255,8 @@ class soundcloudDownloader(object):
 						type=3,
 						desc=u'Cover',
 						data=image
-						)
 					)
+				)
 			audio.tags["TIT2"] = TIT2(encoding=3, text=(metadata.get('title', '')))
 			try:
 				audio.tags["TPE1"] = TPE1(encoding=3, text=metadata.get('artist', ''))
@@ -284,8 +282,8 @@ class soundcloudDownloader(object):
 					type=3,
 					desc=u'Cover',
 					data=image
-					)
 				)
+			)
 			audio.save()
 		elif filename.endswith('.m4a'):
 			audio = MP4(filename)
@@ -304,9 +302,48 @@ class soundcloudDownloader(object):
 		if os.path.isfile('artwork.jpg'):
 			os.remove('artwork.jpg')
 
+	def getTopTracks(self):
+		print("Downloading top {} tracks".format(self.args.top))
+		url_params = {
+			'limit': self.args.top if self.args.top <= 50 else 10,
+			'genre': 'soundcloud:genres:' + self.args.genre,
+			'kind': 'top',
+			'client_id': browser_id
+		}
+		url = 'https://api-v2.soundcloud.com/charts'
+		response = self.connectionHandler(url, payload=url_params)
+		if response:
+			tracks = json.loads(response.text)['collection']
+			for index, track in enumerate(tracks):
+				if self.checkTrackNumber(index):
+					self.getSingleTrack(track['track'])
+		return
+
+	def getNewTracks(self):
+		print("Downloading {} trending tracks".format(self.args.new))
+		url_params = {
+			'limit': self.args.new if self.args.new <= 50 else 10,
+			'genre': 'soundcloud:genres:' + self.args.genre,
+			'kind': 'trending',
+			'client_id': browser_id
+		}
+		url = 'https://api-v2.soundcloud.com/charts'
+		response = self.connectionHandler(url, payload=url_params)
+		if response:
+			tracks = json.loads(response.text)['collection']
+			for index, track in enumerate(tracks):
+				if self.checkTrackNumber(index):
+					self.getSingleTrack(track['track'])
+		return
+
 	def Download(self):
 		if self.url is None:
-			print("No URL entered.")
+			if self.args.top:
+				self.getTopTracks()
+			elif self.args.new:
+				self.getNewTracks()
+			else:
+				print("No URL entered.")
 			return
 		elif 'soundcloud' not in self.url:
 			print("Invalid URL")
@@ -330,7 +367,7 @@ class soundcloudDownloader(object):
 					if not os.path.isdir(folder):
 						os.mkdir(folder)
 					os.chdir(os.path.join(os.getcwd(), str(folder)))
-					print("Saving in : " + os.getcwd())
+					print("Saving in: " + os.getcwd())
 					if self.args.all:
 						self.getUploadedTracks(data)
 						self.getLikedTracks()
@@ -345,7 +382,7 @@ class soundcloudDownloader(object):
 						self.getRecommendedTracks(data, no_tracks)
 					else:
 						print("Single track found.")
-						print("Saving in : " + os.getcwd())
+						print("Saving in: " + os.getcwd())
 						self.getSingleTrack(data)
 				elif data.kind == 'playlist':
 					print("Single playlist found.")
@@ -365,7 +402,7 @@ class soundcloudDownloader(object):
 				if not os.path.isdir(folder):
 					os.mkdir(folder)
 				os.chdir(os.path.join(os.getcwd(), str(folder)))
-				print("Saving in : " + os.getcwd())
+				print("Saving in: " + os.getcwd())
 				if data[0].kind == 'playlist':
 					print("%d playlists found." % (len(data)))
 					self.getPlaylists(data)
