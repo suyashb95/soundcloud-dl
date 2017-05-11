@@ -1,4 +1,4 @@
-from downloader import downloader
+from .downloader import downloader
 import sys, argparse, os
 
 def main():
