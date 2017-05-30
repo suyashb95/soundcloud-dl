@@ -8,7 +8,7 @@ from time import sleep
 from contextlib import closing
 import socket, json
 
-from .config import secret, browser_id
+from .config import secret
 
 class soundcloudDownloader(object):
 	def __init__(self, args=None):
@@ -97,6 +97,9 @@ class soundcloudDownloader(object):
 			self.tagFile(new_filename, metadata, track['artwork_url'])
 		except KeyboardInterrupt:
 			sys.exit(0)
+		except:
+			track['downloadable'] = False
+			self.getSingleTrack(track)
 
 	def getPlaylists(self, playlists):
 		if isinstance(playlists, resource.ResourceList):
