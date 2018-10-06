@@ -1,3 +1,10 @@
+<<<<<<< Updated upstream
 soundcloud==0.4.1
 requests==2.7.0
 mutagen==1.30
+=======
+soundcloud==0.4.1
+requests==2.7.0
+mutagen==1.30
+six==1.10.0
+>>>>>>> Stashed changes
