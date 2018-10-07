@@ -8,6 +8,8 @@ def main():
         help='Downloads the top 10 tracks across all genres')
     group.add_argument('-n', '--new', action='store_true', default=False,
         help='Downloads 10 new tracks across all genres')
+    parser.add_argument('-s', '--similar', action='store_true', default=False,
+        help='Downloads 10 tracks similar to the track in the URL')    
     group.add_argument('url', default=None, type=str, nargs='?',
         help='URL to download tracks from')
     parser.add_argument('-d', '--dir', default=os.getcwd(), type=str,
@@ -32,10 +34,13 @@ def main():
         args.include = set(args.include)
     if args.exclude:
         args.exclude = set(args.exclude)
+    if args.similar and not args.url:
+        print("Track URL is needed to get similar tracks")
+        return
     try:
         d.main()
     except KeyboardInterrupt:
-        print("Exiting")
+        print("\nExiting")
         sys.exit(0)
 
 if __name__ == '__main__':

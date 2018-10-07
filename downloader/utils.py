@@ -1,7 +1,7 @@
 import soundcloud, requests, os, re, sys
 import socket, json
 
-from clint.textui import progress
+from tqdm import tqdm
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4, MP4Cover
 from mutagen.flac import FLAC
@@ -9,6 +9,7 @@ from mutagen.id3 import ID3, TIT2, TPE1, TCON, TDRC, APIC
 from .config import secret
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
+from halo import Halo 
 
 retries = 3
 backoff_factor = 0.3
@@ -24,20 +25,22 @@ def does_file_exist(filename, actual_size):
 			return True
 	return False
 
-def download_file(filename, url, params, silent=False):
-	if not silent: print("Connecting to stream...")
+def download_file(filename, url, params, silent=False, overwrite=False):
+	if not silent: 
+		spinner = Halo(text='Connecting to stream...')
+		spinner.start()	
 	response = session.get(url, stream=True, params=params)
-	if not silent: print("Response: {}".format(str(response.status_code)))
+	if not silent: spinner.stop()
 	file_size = float(response.headers['content-length'])
 	if does_file_exist(filename, file_size):
-		if not silent: print("{} already exists, skipping".format(filename))
+		if not silent: print("{} already exists, skipping\n".format(filename))
 		return filename
 	if not silent: print("File Size: {} MB".format(file_size/(1000**2)))
 	if not silent: print("Saving as:{}".format(filename))
 	with open(filename, 'wb') as file:
-		for chunk in progress.bar(response.iter_content(chunk_size=1024), expected_size=file_size/1024 + 1):
+		for chunk in tqdm(response.iter_content(chunk_size=1024), total=file_size/1024 + 1, unit='KB', unit_scale=True):
 			if chunk: file.write(chunk)
-	if not silent: print("Download complete")
+	if not silent: print("Download complete\n ")
 
 def tagFile(self, filename, metadata, art_url):
 	if not file_done:
