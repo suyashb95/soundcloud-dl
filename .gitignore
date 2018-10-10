@@ -63,3 +63,4 @@ docs/_build/
 target/
 downloader/config.py
 notes.txt
+.vscode/
