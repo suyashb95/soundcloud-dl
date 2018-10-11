@@ -6,7 +6,7 @@ from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4, MP4Cover
 from mutagen.flac import FLAC
 from mutagen.id3 import ID3, TIT2, TPE1, TCON, TDRC, APIC
-from .config import secret
+from .context import secret
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from halo import Halo 

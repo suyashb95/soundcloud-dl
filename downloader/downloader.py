@@ -2,7 +2,7 @@ import soundcloud, requests, os, re, sys
 import socket, json
 from soundcloud import resource
 from .utils import download_file, tag_file
-from .config import secret
+from .context import secret
 from requests.adapters import HTTPAdapter
 from halo import Halo 
 
@@ -95,8 +95,8 @@ class SoundcloudDownloader(object):
 			'limit': no_of_tracks,
 			'offset': 0
 		}		
-		spinner = Halo(text=f'Fetching tracks similar to {track.name}')
-		spinner.start()			
+		spinner = Halo(text=f'Fetching tracks similar to {track.title}')
+		spinner.start()	
 		recommended_tracks_url = f'{self.API_V2}/tracks/{track.id}/related'
 		r = self.session.get(recommended_tracks_url, params=params)
 		spinner.stop()
