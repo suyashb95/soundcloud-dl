@@ -52,9 +52,9 @@ You'll need to get an API key since there are rate limits on streams
 * `--top`, `--new` and `URL` arguments are mutually exclusive
 * The url can be a link to a user, a track or a user's playlists. Downloads a user's uploads unless --all or --likes options are given
 * Adding the --include option overrides the --exclude option
-* Example : `python soundcloud-dl.py https://soundcloud.com/stringofasymptotes --dir D:\Music`
-* Example : `python soundcloud-dl.py https://soundcloud.com/stringofasymptotes --dir D:\Music --exclude 1 2 3`
-* Example : `python soundcloud-dl.py https://soundcloud.com/stringofasymptotes/surrender-and-reality/recommended`
+* Example : `sc-dl https://soundcloud.com/aaasrith --dir D:\Music`
+* Example : `sc-dl https://soundcloud.com/aaasrith --dir D:\Music --exclude 1 2 3`
+* Example : `sc-dl https://soundcloud.com/aaasrith/closurewithaclause -s`
 
 ### Contributions
 If you want to add features, improve them, or report issues, feel free to send a pull request!
