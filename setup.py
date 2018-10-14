@@ -1,9 +1,14 @@
 from setuptools import setup,find_packages
 
+with open('readme.md', 'r') as readme:
+  long_desc = readme.read()
+
 setup(
   name = 'soundcloud_dl',
   version = '0.1.19',
   description = 'A tool to download tracks from soundcloud.com',
+  long_description = long_desc,
+  long_description_content_type='text/markdown',  
   packages = ['','downloader'],
   author = 'Suyash Behera',
   author_email = 'sne9x@outlook.com',
