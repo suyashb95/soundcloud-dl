@@ -61,4 +61,6 @@ docs/_build/
 
 # PyBuilder
 target/
-downloader/config.py
+config.py
+notes.txt
+.vscode/
