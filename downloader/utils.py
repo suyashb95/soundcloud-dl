@@ -33,10 +33,10 @@ def download_file(filename, url, params={}, silent=False):
 	if not silent: spinner.stop()
 	file_size = float(response.headers['content-length']) if 'content-length' in response.headers else 0
 	if does_file_exist(filename, file_size):
-		if not silent: print(f"{filename} already exists, skipping\n")
+		if not silent: print("{} already exists, skipping\n".format(filename))
 		return filename
-	if not silent: print(f"File Size: {file_size/(1000**2):.2f} MB")
-	if not silent: print(f"Saving as:{filename}")
+	if not silent: print("File Size: {0:.2f}".format(file_size/(1000**2)))
+	if not silent: print("Saving as: {}".format(filename))
 	with open(filename, 'wb') as file:
 		for chunk in tqdm(response.iter_content(chunk_size=1024), total=file_size/1024 + 1, unit='KB', unit_scale=True, disable=silent):
 			if chunk: file.write(chunk)
