@@ -2,4 +2,4 @@ tqdm==4.19.5
 soundcloud==0.5.0
 halo==0.0.18
 mutagen==1.41.1
-requests==2.19.1
+requests==2.20.0
