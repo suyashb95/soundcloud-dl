@@ -21,7 +21,7 @@ You'll need to get an API key since there are rate limits on streams
 * Create a file called `config.py` and add your API key there as shown in the file config-example.py
 
 ## Usage
-
+![usage](https://i.imgur.com/Vm8Hirx.gif)
 #### Options
      soundcloud_dl.py [-h] [-t] [-n] [-s] [-d DIR] [-a] [-l]
                            [-e EXCLUDE [EXCLUDE ...]] [-i INCLUDE [INCLUDE ...]]
@@ -49,7 +49,7 @@ You'll need to get an API key since there are rate limits on streams
                              Enter range of tracks to download
        -g [GENRE], --genre [GENRE]
                              use with --top to get top tracks from a specific genre
-                             
+
 * sc-dl can be used instead of soundcloud-dl
 * `--top`, `--new` and `URL` arguments are mutually exclusive
 * The url can be a link to a user, a track or a user's playlists. Downloads a user's uploads unless --all or --likes options are given
