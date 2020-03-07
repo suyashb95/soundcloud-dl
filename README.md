@@ -16,9 +16,9 @@ You'll need to get an API key since there are rate limits on streams
 * `pip install -r "requirements.txt"`
 
 ### Getting an API key
-* Log in to Soundcloud and register a new app [here](http://soundcloud.com/you/apps). That should give you an API key
+* Go to soundcloud.com and get the client ID from one of the API calls from the dev console
 * Navigate to the folder where the package is installed `Python36\Lib\site-packages\soundcloud-dl\downloader`
-* Create a file called `config.py` and add your API key there as shown in the file config-example.py
+* Create a file called `config.py` and add your client ID key there as shown in the file config-example.py
 
 ## Usage
 ![usage](https://i.imgur.com/Vm8Hirx.gif)
