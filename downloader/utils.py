@@ -6,37 +6,25 @@ from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4, MP4Cover
 from mutagen.flac import FLAC
 from mutagen.id3 import ID3, TIT2, TPE1, TCON, TDRC, APIC
-from .context import secret
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
-from halo import Halo 
-
-retries = 3
-backoff_factor = 0.3
-status_forcelist = (500, 502, 504)
-session = requests.Session()
-retry = Retry(total = retries, read = retries, connect = retries, backoff_factor = backoff_factor, status_forcelist = status_forcelist)
-session.mount('http://', adapter = HTTPAdapter(max_retries = retry))
-session.mount('https://', adapter = HTTPAdapter(max_retries = retry))
+from halo import Halo
 
 def does_file_exist(filename, actual_size=None):
-	if os.path.isfile(filename):
-		if not actual_size or os.path.getsize(filename) >= float(actual_size):
-			return True
-	return False
+	return os.path.isfile(filename) and (not actual_size or os.path.getsize(filename) >= float(actual_size))
 
-def download_file(filename, url, params={}, silent=False):
-	if not silent: 
+def download_file(session, filename, url, params={}, silent=False):
+	if not silent:
 		spinner = Halo(text='Connecting to stream...')
-		spinner.start()	
+		spinner.start()
 	response = session.get(url, stream=True, params=params)
 	if not silent: spinner.stop()
 	file_size = float(response.headers['content-length']) if 'content-length' in response.headers else 0
 	if does_file_exist(filename, file_size):
 		if not silent: print("{} already exists, skipping\n".format(filename))
 		return filename
-	if not silent: print("File Size: {0:.2f}".format(file_size/(1000**2)))
 	if not silent: print("Saving as: {}".format(filename))
+	if not silent: print("File Size: {0:.2f}".format(file_size/(1000**2)))
 	with open(filename, 'wb') as file:
 		for chunk in tqdm(response.iter_content(chunk_size=1024), total=file_size/1024 + 1, unit='KB', unit_scale=True, disable=silent):
 			if chunk: file.write(chunk)
@@ -45,7 +33,7 @@ def download_file(filename, url, params={}, silent=False):
 def tag_file(filename, metadata):
 	image = None
 	if metadata['artwork_url']: download_file('artwork.jpg', metadata['artwork_url'], silent=True)
-	if os.path.isfile('artwork.jpg'): image = open('artwork.jpg', 'rb').read()	
+	if os.path.isfile('artwork.jpg'): image = open('artwork.jpg', 'rb').read()
 	if filename.endswith('.mp3'):
 		audio = MP3(filename, ID3=ID3)
 		audio.add_tags()

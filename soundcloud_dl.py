@@ -1,4 +1,4 @@
-from .downloader import downloader
+from downloader import downloader
 import sys, argparse, os
 
 def main():
@@ -9,7 +9,7 @@ def main():
     group.add_argument('-n', '--new', action='store_true', default=False,
         help='Downloads 10 new tracks across all genres')
     parser.add_argument('-s', '--similar', action='store_true', default=False,
-        help='Downloads 10 tracks similar to the track in the URL')    
+        help='Downloads 10 tracks similar to the track in the URL')
     group.add_argument('url', default=None, type=str, nargs='?',
         help='URL to download tracks from')
     parser.add_argument('-d', '--dir', default=os.getcwd(), type=str,

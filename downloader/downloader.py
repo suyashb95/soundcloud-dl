@@ -2,17 +2,16 @@ import soundcloud, requests, os, re, sys
 import socket, json
 from soundcloud import resource
 from .utils import download_file, tag_file
-from .context import secret
+from .context import client_id
 from requests.adapters import HTTPAdapter
-from halo import Halo 
+from halo import Halo
 
 class SoundcloudDownloader(object):
 	def __init__(self, args=None):
 		self.args = args
 		self.url = args.url
 		self.dirname = args.dir
-		self.client = soundcloud.Client(client_id=secret)
-		self.API_V1 = "https://api.soundcloud.com"
+		self.client = soundcloud.Client(client_id=client_id)
 		self.API_V2 = "https://api-v2.soundcloud.com"
 		self.download_count = 0
 		self.session = requests.Session()
@@ -23,14 +22,14 @@ class SoundcloudDownloader(object):
 		return self.validate_name("{}-{}.{}".format(metadata["artist"], metadata["title"], metadata["format"]))
 
 	def get_track_url(self, track):
-		if track["downloadable"]: 
-			return ("{}?client_id={}".format(track["download_url"], secret), track.get("original_format", "mp3"))
-		if track["streamable"]: 
+		if track["downloadable"]:
+			return ("{}?client_id={}".format(track["download_url"], client_id), track.get("original_format", "mp3"))
+		if track["streamable"]:
 			if "stream_url" in track:
-				return ("{}?client_id={}".format(track["stream_url"], secret), "mp3")
+				return ("{}?client_id={}".format(track["stream_url"], client_id), "mp3")
 			for transcoding in track["media"]["transcodings"]:
 				if transcoding["format"]["protocol"] == "progressive":
-					r = self.session.get(transcoding["url"], params={"client_id": secret})
+					r = self.session.get(transcoding["url"], params={"client_id": client_id})
 					return (json.loads(r.text)["url"] , "mp3")
 
 	def get_track_metadata(self, track):
@@ -54,7 +53,8 @@ class SoundcloudDownloader(object):
 		if isinstance(track, resource.Resource): track = track.fields()
 		metadata = self.get_track_metadata(track)
 		filename = self.get_filename(metadata)
-		download_file(filename, metadata["download_url"])
+		print(metadata['title'])
+		download_file(self.session, filename, metadata["download_url"])
 		try:
 			tag_file(filename, metadata)
 		except:
@@ -68,7 +68,7 @@ class SoundcloudDownloader(object):
 	def get_playlist(self, playlist):
 		print("{} tracks found in playlist".format(len(playlist.tracks)))
 		self.get_multiple_tracks(playlist.tracks)
-	
+
 	def check_track_number(self, index):
 		if self.download_count == self.args.limit:
 			return False
@@ -82,34 +82,62 @@ class SoundcloudDownloader(object):
 		return True
 
 	def get_uploaded_tracks(self, user):
+		no_of_tracks = self.args.limit if self.args.limit else 9999
+		params = {
+			"client_id": client_id,
+			"limit": no_of_tracks,
+			"offset": 0
+		}
+		tracks = []
 		spinner = Halo(text="Fetching uploads")
-		spinner.start()			
-		tracks = self.client.get("/tracks", id=user.id)
+		spinner.start()
+		url = "{}/users/{}/tracks".format(self.API_V2, user.id)
+		while url:
+			response = self.session.get(url, params=params)
+			json_payload = json.loads(response.text)
+			tracks += json_payload["collection"]
+			if len(tracks) >= no_of_tracks: break
+			url = json_payload.get("next_href", None)
 		spinner.stop()
 		print("Found {} uploads".format(len(tracks)))
-		self.get_multiple_tracks(tracks)          
+		self.get_multiple_tracks(tracks)
 
 	def get_recommended_tracks(self, track, no_of_tracks=10):
 		params = {
-			"client_id": secret,
+			"client_id": client_id,
 			"limit": no_of_tracks,
 			"offset": 0
-		}		
+		}
 		spinner = Halo(text="Fetching tracks similar to {}".format(track.title))
-		spinner.start()	
+		spinner.start()
 		recommended_tracks_url = "{}/tracks/{}/related".format(self.API_V2, track.id)
 		r = self.session.get(recommended_tracks_url, params=params)
 		spinner.stop()
 		tracks = json.loads(r.text)["collection"]
+		print("Found {} similar tracks".format(len(tracks)))
 		self.get_multiple_tracks(tracks)
 
-	def get_liked_tracks(self):
-		spinner = Halo(text="Fetching liked tracks")
-		spinner.start()		
-		liked_tracks = self.client.get("/resolve", url=self.url + "/likes")
+	def get_liked_tracks(self, user):
+		no_of_tracks = self.args.limit if self.args.limit else 9999
+		params = {
+			"client_id": client_id,
+			"limit": no_of_tracks,
+			"offset": 0
+		}
+		tracks = []
+		spinner = Halo(text="Fetching uploads")
+		spinner.start()
+		url = "{}/users/{}/likes".format(self.API_V2, user.id)
+		while url:
+			response = self.session.get(url, params=params)
+			json_payload = json.loads(response.text)
+			tracks += list(filter(lambda x: 'playlist' not in x, json_payload["collection"]))
+			if len(tracks) >= no_of_tracks: break
+			url = json_payload.get("next_href", None)
 		spinner.stop()
-		print("{} liked track(s) found".format(len(liked_tracks)))
-		self.get_multiple_tracks(liked_tracks)
+		tracks = [track['track'] for track in tracks]
+		print("Found {} likes".format(len(tracks)))
+		self.get_multiple_tracks(tracks)
 
 	def validate_name(self, name):
 		return re.sub('[\\/:*"?<>|]', "_", name)
@@ -119,7 +147,7 @@ class SoundcloudDownloader(object):
 			"limit": no_of_tracks,
 			"genre": "soundcloud:genres:" + self.args.genre,
 			"kind": kind,
-			"client_id": secret
+			"client_id": client_id
 		}
 		url = "{}/charts".format(self.API_V2)
 		tracks = []
@@ -141,7 +169,7 @@ class SoundcloudDownloader(object):
 		if self.args.new:
 			self.get_charted_tracks("trending")
 		spinner = Halo(text="Resolving URL")
-		spinner.start()		
+		spinner.start()
 		data = self.client.get("/resolve", url=self.url) if self.url else None
 		spinner.stop()
 		if isinstance(data, resource.Resource):
@@ -152,7 +180,7 @@ class SoundcloudDownloader(object):
 				os.chdir(os.path.join(os.getcwd(), folder))
 				print("Saving in: " + os.getcwd())
 				if self.args.all or self.args.likes:
-					self.get_liked_tracks()
+					self.get_liked_tracks(data)
 				if not self.args.likes:
 					self.get_uploaded_tracks(data)
 			elif data.kind == "track":
