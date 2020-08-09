@@ -14,7 +14,13 @@ def set_api_key(key):
 	api_key_config = "client_id='{}'".format(key)
 	with open('./config.py', 'w') as config_file:
 		config_file.write(api_key_config)
-	
+
+def validate_name(name):
+		return re.sub('[\\/:*"?<>|]', "_", name)
+		
+def get_filename(metadata):
+	return validate_name("{}-{}.{}".format(metadata["artist"], metadata["title"], metadata["format"]))
+
 def does_file_exist(filename, actual_size=None):
 	return os.path.isfile(filename) and (not actual_size or os.path.getsize(filename) >= float(actual_size))
 
