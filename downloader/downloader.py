@@ -22,7 +22,7 @@ class SoundcloudDownloader(object):
 		return self.validate_name("{}-{}.{}".format(metadata["artist"], metadata["title"], metadata["format"]))
 
 	def get_track_url(self, track):
-		if track["downloadable"]:
+		if track["downloadable"] and "download_url" in track:
 			return ("{}?client_id={}".format(track["download_url"], client_id), track.get("original_format", "mp3"))
 		if track["streamable"]:
 			if "stream_url" in track:
@@ -31,6 +31,7 @@ class SoundcloudDownloader(object):
 				if transcoding["format"]["protocol"] == "progressive":
 					r = self.session.get(transcoding["url"], params={"client_id": client_id})
 					return (json.loads(r.text)["url"] , "mp3")
+		return (None, None)
 
 	def get_track_metadata(self, track):
 		artist = "unknown"
@@ -53,13 +54,16 @@ class SoundcloudDownloader(object):
 		if isinstance(track, resource.Resource): track = track.fields()
 		metadata = self.get_track_metadata(track)
 		filename = self.get_filename(metadata)
-		print(metadata['title'])
-		download_file(self.session, filename, metadata["download_url"])
-		try:
-			tag_file(filename, metadata)
-		except:
-			if os.path.isfile("artwork.jpg"): os.remove("artwork.jpg")
-		self.download_count += 1
+		if metadata['download_url']:
+			print(metadata['title'])
+			download_file(self.session, filename, metadata["download_url"])
+			try:
+				tag_file(filename, metadata)
+			except:
+				if os.path.isfile("artwork.jpg"): os.remove("artwork.jpg")
+			self.download_count += 1
+		else:
+			print('Cannot download {}'.format(metadata['title']))
 
 	def get_multiple_tracks(self, tracks):
 		for _, track in filter(lambda x: self.check_track_number(x[0]), enumerate(tracks)):
@@ -166,11 +170,19 @@ class SoundcloudDownloader(object):
 		os.chdir(self.dirname)
 		if self.args.top:
 			self.get_charted_tracks("top")
+			return 
 		if self.args.new:
 			self.get_charted_tracks("trending")
+			return
 		spinner = Halo(text="Resolving URL")
 		spinner.start()
-		data = self.client.get("/resolve", url=self.url) if self.url else None
+		params = {
+			"url": self.url,
+			"client_id": client_id
+		}
+		url = "{}/resolve".format(self.API_V2)
+		res = self.session.get(url, params=params).json() if self.url else None
+		data = resource.Resource(res)
 		spinner.stop()
 		if isinstance(data, resource.Resource):
 			if data.kind == "user":

@@ -5,7 +5,7 @@ with open('readme.md', 'r') as readme:
 
 setup(
   name = 'soundcloud_dl',
-  version = '0.1.21',
+  version = '0.1.22',
   description = 'A tool to download tracks from soundcloud.com',
   long_description = long_desc,
   long_description_content_type='text/markdown',
