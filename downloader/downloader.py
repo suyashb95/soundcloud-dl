@@ -13,6 +13,7 @@ class SoundcloudDownloader(object):
         self.dirname = args.dir
         self.client = soundcloud.Client(client_id=client_id)
         self.API_V2 = "https://api-v2.soundcloud.com"
+        self.API_V1 = "https://api.soundcloud.com"
         self.download_count = 0
         self.session = requests.Session()
         self.session.mount("http://", adapter = HTTPAdapter(max_retries = 3))
@@ -183,8 +184,12 @@ class SoundcloudDownloader(object):
             "url": self.url,
             "client_id": client_id
         }
-        url = "{}/resolve".format(self.API_V2)
-        res = self.session.get(url, params=params).json() if self.url else None
+        url = "{}/resolve".format(self.API_V1)
+        res = self.session.get(url, params=params)
+        if not res.ok:
+            print("Could not get a valid response from the SoundCloud API. Please check the API key")
+            return
+        res = res.json()
         data = resource.Resource(res)
         spinner.stop()
         if isinstance(data, resource.Resource):
