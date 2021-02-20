@@ -5,11 +5,11 @@ with open('README.md', 'r') as readme:
 
 setup(
   name = 'soundcloud_dl',
-  version = '0.1.24',
+  version = '0.1.25',
   description = 'A tool to download tracks from soundcloud.com',
   long_description = long_desc,
   long_description_content_type='text/markdown',
-  packages = find_packages(),
+  packages = ['', 'downloader'],
   author = 'Suyash Behera',
   author_email = 'sne9x@outlook.com',
   url = 'https://github.com/Suyash458/soundcloud-dl',
