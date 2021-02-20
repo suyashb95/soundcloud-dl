@@ -11,9 +11,11 @@ from requests.adapters import HTTPAdapter
 from halo import Halo
 
 def set_api_key(key):
+    config_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.py')
     api_key_config = "client_id='{}'".format(key)
-    with open('./config.py', 'w') as config_file:
+    with open(config_file_path, 'w') as config_file:
         config_file.write(api_key_config)
+    print("API key set successfully")
 
 def validate_name(name):
         return re.sub('[\\/:*"?<>|]', "_", name)

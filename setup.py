@@ -1,15 +1,15 @@
-from setuptools import setup,find_packages
+from setuptools import setup, find_packages
 
 with open('README.md', 'r') as readme:
   long_desc = readme.read()
 
 setup(
   name = 'soundcloud_dl',
-  version = '0.1.23',
+  version = '0.1.24',
   description = 'A tool to download tracks from soundcloud.com',
   long_description = long_desc,
   long_description_content_type='text/markdown',
-  packages = ['','downloader'],
+  packages = find_packages(),
   author = 'Suyash Behera',
   author_email = 'sne9x@outlook.com',
   url = 'https://github.com/Suyash458/soundcloud-dl',
