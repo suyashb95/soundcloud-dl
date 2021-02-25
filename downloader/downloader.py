@@ -141,7 +141,7 @@ class SoundcloudDownloader(object):
         while url:
             json_payload = self.session.get(url, params=params).json()
             tracks += json_payload["collection"]
-            tracks = list(filter(lambda track: self.can_download_track(track['track']), tracks))
+            tracks = list(filter(lambda track: self.can_download_track(track), tracks))
             if len(tracks) >= no_of_tracks: break
             url = json_payload.get("next_href", None)
         spinner.stop()
@@ -184,7 +184,7 @@ class SoundcloudDownloader(object):
             "url": self.url,
             "client_id": client_id
         }
-        url = "{}/resolve".format(self.API_V1)
+        url = "{}/resolve".format(self.API_V2)
         res = self.session.get(url, params=params)
         if not res.ok:
             print("Could not get a valid response from the SoundCloud API. Please check the API key")
