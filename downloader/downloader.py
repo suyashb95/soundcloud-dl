@@ -11,16 +11,15 @@ class SoundcloudDownloader(object):
         self.args = args
         self.url = args.url
         self.dirname = args.dir
-        self.client = soundcloud.Client(client_id=client_id)
         self.API_V2 = "https://api-v2.soundcloud.com"
-        self.API_V1 = "https://api.soundcloud.com"
         self.download_count = 0
         self.session = requests.Session()
+        self.session.params.update({'client_id': client_id})
         self.session.mount("http://", adapter = HTTPAdapter(max_retries = 3))
         self.session.mount("https://", adapter = HTTPAdapter(max_retries = 3))
 
     def can_download_track(self, track):
-        is_downloadable = track["downloadable"] and "download_url" in track
+        is_downloadable = "downloadable" in track and "download_url" in track
         is_streamable = track["streamable"]
         has_stream_url = "stream_url" in track
         for transcoding in track["media"]["transcodings"]:
@@ -30,14 +29,14 @@ class SoundcloudDownloader(object):
         return is_downloadable or (is_streamable and has_stream_url)
 
     def get_track_url(self, track):
-        if track["downloadable"] and "download_url" in track:
-            return ("{}?client_id={}".format(track["download_url"], client_id), track.get("original_format", "mp3"))
+        if "downloadable" in track and "download_url" in track:
+            return (track["download_url"], track.get("original_format", "mp3"))
         if track["streamable"]:
             if "stream_url" in track:
-                return ("{}?client_id={}".format(track["stream_url"], client_id), "mp3")
+                return (track["stream_url"], "mp3")
             for transcoding in track["media"]["transcodings"]:
                 if transcoding["format"]["protocol"] == "progressive":
-                    r = self.session.get(transcoding["url"], params={"client_id": client_id})
+                    r = self.session.get(transcoding["url"])
                     return (json.loads(r.text)["url"] , "mp3")
         return (None, None)
 
@@ -94,7 +93,6 @@ class SoundcloudDownloader(object):
 
     def get_recommended_tracks(self, track, no_of_tracks=10):
         params = {
-            "client_id": client_id,
             "limit": no_of_tracks,
             "offset": 0
         }
@@ -112,7 +110,6 @@ class SoundcloudDownloader(object):
             "limit": no_of_tracks,
             "genre": "soundcloud:genres:" + self.args.genre,
             "kind": kind,
-            "client_id": client_id
         }
         url = "{}/charts".format(self.API_V2)
         tracks = []
@@ -130,7 +127,6 @@ class SoundcloudDownloader(object):
     def get_uploaded_tracks(self, user):
         no_of_tracks = self.args.limit if self.args.limit else 9999
         params = {
-            "client_id": client_id,
             "limit": no_of_tracks,
             "offset": 0
         }
@@ -151,7 +147,6 @@ class SoundcloudDownloader(object):
     def get_liked_tracks(self, user):
         no_of_tracks = self.args.limit if self.args.limit else 9999
         params = {
-            "client_id": client_id,
             "limit": no_of_tracks,
             "offset": 0
         }
@@ -182,7 +177,6 @@ class SoundcloudDownloader(object):
         spinner.start()
         params = {
             "url": self.url,
-            "client_id": client_id
         }
         url = "{}/resolve".format(self.API_V2)
         res = self.session.get(url, params=params)
