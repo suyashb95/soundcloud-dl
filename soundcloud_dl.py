@@ -12,8 +12,7 @@ def main():
     group.add_argument('-n', '--new', action='store_true', default=False,
         help='Downloads 10 new tracks across all genres')
     group.add_argument('-u', '--url', default=None, type=str, nargs='?',
-        help='URL to download tracks from')
-
+        help='URL to download tracks from. If this is a user\'s profile, all uploads are fetched unless -a/--all or -l/--likes are specified')
     parser.add_argument('--set-api-key', type=str,
         help='sets the soundcloud API key')
     parser.add_argument('-s', '--similar', action='store_true', default=False,
@@ -22,9 +21,9 @@ def main():
         help='Directory to save tracks in. Defaults to current working directory')
 
     parser.add_argument('-a', '--all', default=False, action='store_true',
-        help='Download all tracks (Uploads and likes)')
+        help='Download all tracks (Uploads and likes). Should be used along with -u/--url with a user\'s profile URL')
     parser.add_argument('-l', '--likes', default=False, action='store_true',
-        help='Download only liked tracks.')
+        help='Download only liked tracks. Should be used along with -u/--url with a user\'s profile URL')
 
     parser.add_argument('-e', '--exclude', nargs='+', type=int,
         help='Enter track numbers to exclude.')
@@ -49,7 +48,7 @@ def main():
         return
 
     if not any([args.url, args.top, args.new]):
-        print("At least one of the following args is required -n/--new -t/--top or -u/--url")
+        parser.print_help()
         return                
     
     from downloader import downloader
