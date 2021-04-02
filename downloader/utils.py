@@ -17,11 +17,11 @@ def set_api_key(key):
         config_file.write(api_key_config)
     print("API key set successfully")
 
-def validate_name(name):
+def sanitize(name):
         return re.sub('[\\/:*"?<>|]', "_", name)
         
 def get_filename(metadata):
-    return validate_name("{}-{}.{}".format(metadata["artist"], metadata["title"], metadata["format"]))
+    return sanitize("{}-{}.{}".format(metadata["artist"], metadata["title"], metadata["format"]))
 
 def does_file_exist(filename, actual_size=None):
     return os.path.isfile(filename) and (not actual_size or os.path.getsize(filename) >= float(actual_size))

@@ -1,7 +1,7 @@
 import soundcloud, requests, os, re, sys
 import socket, json
 from soundcloud import resource
-from .utils import download_file, tag_file, validate_name, get_filename
+from .utils import download_file, tag_file, sanitize, get_filename
 from .context import client_id
 from requests.adapters import HTTPAdapter
 from halo import Halo
@@ -57,8 +57,7 @@ class SoundcloudDownloader(object):
             "artwork_url": track["artwork_url"]
         }
 
-    def get_single_track(self, track):
-        if isinstance(track, resource.Resource): track = track.fields()
+    def download_track(self, track):
         metadata = self.get_track_metadata(track)
         filename = get_filename(metadata)
         if metadata['download_url']:
@@ -71,13 +70,13 @@ class SoundcloudDownloader(object):
         else:
             print('Cannot download {}'.format(metadata['title']))
 
-    def get_multiple_tracks(self, tracks):
+    def download_tracks(self, tracks):
         for _, track in filter(lambda x: self.check_track_number(x[0]), enumerate(tracks)):
-            self.get_single_track(track)
+            self.download_track(track)
 
     def get_playlist(self, playlist):
         print("{} tracks found in playlist".format(len(playlist.tracks)))
-        self.get_multiple_tracks(playlist.tracks)
+        self.download_tracks(playlist.tracks)
 
     def check_track_number(self, index):
         if self.download_count == self.args.limit:
@@ -96,14 +95,14 @@ class SoundcloudDownloader(object):
             "limit": no_of_tracks,
             "offset": 0
         }
-        spinner = Halo(text="Fetching tracks similar to {}".format(track.title))
+        spinner = Halo(text="Fetching tracks similar to {}".format(track['title']))
         spinner.start()
-        recommended_tracks_url = "{}/tracks/{}/related".format(self.API_V2, track.id)
+        recommended_tracks_url = "{}/tracks/{}/related".format(self.API_V2, track['id'])
         r = self.session.get(recommended_tracks_url, params=params)
         spinner.stop()
         tracks = r.json()["collection"]
         print("Found {} similar tracks".format(len(tracks)))
-        self.get_multiple_tracks(tracks)
+        self.download_tracks(tracks)
 
     def get_charted_tracks(self, kind, no_of_tracks=10):
         url_params = {
@@ -122,7 +121,7 @@ class SoundcloudDownloader(object):
             url = json_payload["next_href"]
         spinner.stop()
         tracks = map(lambda x: x["track"], tracks[:no_of_tracks])
-        self.get_multiple_tracks(tracks)
+        self.download_tracks(tracks)
 
     def get_uploaded_tracks(self, user):
         no_of_tracks = self.args.limit if self.args.limit else 9999
@@ -133,7 +132,7 @@ class SoundcloudDownloader(object):
         tracks = []
         spinner = Halo(text="Fetching uploads")
         spinner.start()
-        url = "{}/users/{}/tracks".format(self.API_V2, user.id)
+        url = "{}/users/{}/tracks".format(self.API_V2, user['id'])
         while url:
             json_payload = self.session.get(url, params=params).json()
             tracks += json_payload["collection"]
@@ -142,7 +141,7 @@ class SoundcloudDownloader(object):
             url = json_payload.get("next_href", None)
         spinner.stop()
         print("Found {} uploads".format(len(tracks)))
-        self.get_multiple_tracks(tracks)
+        self.download_tracks(tracks)
 
     def get_liked_tracks(self, user):
         no_of_tracks = self.args.limit if self.args.limit else 9999
@@ -153,7 +152,7 @@ class SoundcloudDownloader(object):
         tracks = []
         spinner = Halo(text="Fetching uploads")
         spinner.start()
-        url = "{}/users/{}/likes".format(self.API_V2, user.id)
+        url = "{}/users/{}/likes".format(self.API_V2, user['id'])
         while url:
             json_payload = self.session.get(url, params=params).json()
             tracks += list(filter(lambda x: 'playlist' not in x, json_payload["collection"]))
@@ -163,7 +162,7 @@ class SoundcloudDownloader(object):
         spinner.stop()
         tracks = [track['track'] for track in tracks]
         print("Found {} likes".format(len(tracks)))
-        self.get_multiple_tracks(tracks)
+        self.download_tracks(tracks)
 
     def main(self):
         os.chdir(self.dirname)
@@ -183,13 +182,12 @@ class SoundcloudDownloader(object):
         if not res.ok:
             print("Could not get a valid response from the SoundCloud API. Please check the API key")
             return
-        res = res.json()
-        data = resource.Resource(res)
+        data = res.json()
         spinner.stop()
-        if isinstance(data, resource.Resource):
-            if data.kind == "user":
+        if isinstance(data, dict):
+            if data['kind'] == "user":
                 print("User profile found")
-                folder = validate_name(data.username)
+                folder = sanitize(data['username'])
                 if not os.path.isdir(folder): os.mkdir(folder)
                 os.chdir(os.path.join(os.getcwd(), folder))
                 print("Saving in: " + os.getcwd())
@@ -197,23 +195,23 @@ class SoundcloudDownloader(object):
                     self.get_liked_tracks(data)
                 if not self.args.likes:
                     self.get_uploaded_tracks(data)
-            elif data.kind == "track":
+            elif data['kind'] == "track":
                     print("Single track found")
                     print("Saving in: " + os.getcwd())
                     if self.args.similar:
                         self.get_recommended_tracks(data)
-                    self.get_single_track(data)
-            elif data.kind == "playlist":
+                    self.download_track(data)
+            elif data['kind'] == "playlist":
                 print("Single playlist found.")
                 folder = validate_name(data.user["username"])
                 if not os.path.isdir(folder):
                     os.mkdir(folder)
                 os.chdir(os.path.join(os.getcwd(), str(folder)))
                 self.get_playlist(data)
-        elif isinstance(data, resource.ResourceList):
-            if data[0].kind == "playlist":
+        elif isinstance(data, list):
+            if data[0]['kind'] == "playlist":
                 print("%d playlists found" % (len(data)))
                 for playlist in data:
                     self.get_playlist(playlist)
-            elif data[0].kind == "track":
-                self.get_multiple_tracks(data)
+            elif data[0]['kind'] == "track":
+                self.download_tracks(data)
