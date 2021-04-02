@@ -1,7 +1,7 @@
 import soundcloud, requests, os, re, sys
 import socket, json
 from soundcloud import resource
-from .utils import download_file, tag_file, sanitize, get_filename
+from .utils import download_file, tag_file, sanitize, get_filename, create_directory
 from .context import client_id
 from requests.adapters import HTTPAdapter
 from halo import Halo
@@ -74,10 +74,6 @@ class SoundcloudDownloader(object):
         for _, track in filter(lambda x: self.check_track_number(x[0]), enumerate(tracks)):
             self.download_track(track)
 
-    def get_playlist(self, playlist):
-        print("{} tracks found in playlist".format(len(playlist.tracks)))
-        self.download_tracks(playlist.tracks)
-
     def check_track_number(self, index):
         if self.download_count == self.args.limit:
             return False
@@ -89,6 +85,15 @@ class SoundcloudDownloader(object):
             if not self.args.range[0] <= index + 1 <= self.args.range[1]:
                 return False
         return True
+    
+    def get_paginated_tracks(self, url, url_params, num_tracks, filter_func):
+        tracks = []
+        while len(tracks) < num_tracks:
+            json_payload = self.session.get(url, params=url_params).json()
+            tracks += json_payload["collection"]
+            tracks = list(filter(filter_func, tracks))			
+            url = json_payload["next_href"]
+        return tracks
 
     def get_recommended_tracks(self, track, no_of_tracks=10):
         params = {
@@ -102,46 +107,46 @@ class SoundcloudDownloader(object):
         spinner.stop()
         tracks = r.json()["collection"]
         print("Found {} similar tracks".format(len(tracks)))
-        self.download_tracks(tracks)
+        return tracks
 
-    def get_charted_tracks(self, kind, no_of_tracks=10):
+    def get_charted_tracks(self, kind, num_tracks=10):
         url_params = {
-            "limit": no_of_tracks,
+            "limit": num_tracks,
             "genre": "soundcloud:genres:" + self.args.genre,
             "kind": kind,
         }
         url = "{}/charts".format(self.API_V2)
-        tracks = []
-        spinner = Halo(text="Fetching {} {} tracks".format(no_of_tracks, kind))
+        spinner = Halo(text="Fetching {} {} tracks".format(num_tracks, kind))
         spinner.start()
-        while len(tracks) < no_of_tracks:
-            json_payload = self.session.get(url, params=url_params).json()
-            tracks += json_payload["collection"]
-            tracks = list(filter(lambda track: self.can_download_track(track['track']), tracks))			
-            url = json_payload["next_href"]
+        tracks = get_paginated_tracks(
+            url, 
+            url_params, 
+            num_tracks, 
+            lambda track: self.can_download_track(track['track'])
+        )
         spinner.stop()
-        tracks = map(lambda x: x["track"], tracks[:no_of_tracks])
-        self.download_tracks(tracks)
+        print("Found {} tracks".format(len(tracks)))
+        return list(map(lambda x: x["track"], tracks[:num_tracks]))
+        
 
     def get_uploaded_tracks(self, user):
-        no_of_tracks = self.args.limit if self.args.limit else 9999
+        num_tracks = self.args.limit if self.args.limit else 9999
         params = {
-            "limit": no_of_tracks,
+            "limit": num_tracks,
             "offset": 0
         }
-        tracks = []
+        url = "{}/users/{}/tracks".format(self.API_V2, user['id'])
         spinner = Halo(text="Fetching uploads")
         spinner.start()
-        url = "{}/users/{}/tracks".format(self.API_V2, user['id'])
-        while url:
-            json_payload = self.session.get(url, params=params).json()
-            tracks += json_payload["collection"]
-            tracks = list(filter(lambda track: self.can_download_track(track), tracks))
-            if len(tracks) >= no_of_tracks: break
-            url = json_payload.get("next_href", None)
+        tracks = get_paginated_tracks(
+            url, 
+            url_params, 
+            num_tracks, 
+            lambda track: self.can_download_track(track)
+        )
         spinner.stop()
         print("Found {} uploads".format(len(tracks)))
-        self.download_tracks(tracks)
+        return tracks
 
     def get_liked_tracks(self, user):
         no_of_tracks = self.args.limit if self.args.limit else 9999
@@ -149,20 +154,18 @@ class SoundcloudDownloader(object):
             "limit": no_of_tracks,
             "offset": 0
         }
-        tracks = []
-        spinner = Halo(text="Fetching uploads")
-        spinner.start()
         url = "{}/users/{}/likes".format(self.API_V2, user['id'])
-        while url:
-            json_payload = self.session.get(url, params=params).json()
-            tracks += list(filter(lambda x: 'playlist' not in x, json_payload["collection"]))
-            tracks = list(filter(lambda track: self.can_download_track(track['track']), tracks))			
-            if len(tracks) >= no_of_tracks: break
-            url = json_payload.get("next_href", None)
+        spinner = Halo(text="Fetching likes")
+        spinner.start()
+        tracks = get_paginated_tracks(
+            url, 
+            url_params, 
+            num_tracks, 
+            lambda track: 'playlist' not in track and self.can_download_track(track['track'])
+        )        
         spinner.stop()
-        tracks = [track['track'] for track in tracks]
         print("Found {} likes".format(len(tracks)))
-        self.download_tracks(tracks)
+        return list(map(lambda x: x["track"], tracks[:num_tracks]))
 
     def main(self):
         os.chdir(self.dirname)
@@ -184,34 +187,31 @@ class SoundcloudDownloader(object):
             return
         data = res.json()
         spinner.stop()
+        tracks = []
         if isinstance(data, dict):
             if data['kind'] == "user":
                 print("User profile found")
-                folder = sanitize(data['username'])
-                if not os.path.isdir(folder): os.mkdir(folder)
-                os.chdir(os.path.join(os.getcwd(), folder))
+                create_directory(data['username'])
                 print("Saving in: " + os.getcwd())
                 if self.args.all or self.args.likes:
-                    self.get_liked_tracks(data)
+                    tracks = self.get_liked_tracks(data)
                 if not self.args.likes:
-                    self.get_uploaded_tracks(data)
+                    tracks = self.get_uploaded_tracks(data)
             elif data['kind'] == "track":
                     print("Single track found")
                     print("Saving in: " + os.getcwd())
+                    tracks = data
                     if self.args.similar:
-                        self.get_recommended_tracks(data)
-                    self.download_track(data)
+                        tracks = self.get_recommended_tracks(data)
             elif data['kind'] == "playlist":
                 print("Single playlist found.")
-                folder = validate_name(data.user["username"])
-                if not os.path.isdir(folder):
-                    os.mkdir(folder)
-                os.chdir(os.path.join(os.getcwd(), str(folder)))
-                self.get_playlist(data)
+                create_directory(data['user']['username'])
+                tracks = playlist['tracks']
         elif isinstance(data, list):
             if data[0]['kind'] == "playlist":
                 print("%d playlists found" % (len(data)))
                 for playlist in data:
-                    self.get_playlist(playlist)
+                    tracks += playlist['tracks']
             elif data[0]['kind'] == "track":
-                self.download_tracks(data)
+                tracks = data
+        self.download_tracks(tracks)

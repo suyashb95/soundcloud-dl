@@ -19,7 +19,12 @@ def set_api_key(key):
 
 def sanitize(name):
         return re.sub('[\\/:*"?<>|]', "_", name)
-        
+
+def create_directory(name):
+    folder = sanitize(name)
+    if not os.path.isdir(folder): os.mkdir(folder)
+    os.chdir(os.path.join(os.getcwd(), folder))    
+
 def get_filename(metadata):
     return sanitize("{}-{}.{}".format(metadata["artist"], metadata["title"], metadata["format"]))
 
