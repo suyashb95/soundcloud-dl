@@ -2,6 +2,7 @@
 [![Downloads](https://pepy.tech/badge/soundcloud-dl)](https://pepy.tech/project/soundcloud-dl)
 
 A small command-line program to download tracks from soundcloud.com
+
 You'll need to get an API key since there are rate limits on streams
 
 ## Installation
